@@ -1,0 +1,15 @@
+Source: @@PKG_NAME@@
+Section: mail
+Priority: optional
+Build-Depends: debhelper (>=9)
+Standards-Version: 3.9.6
+Maintainer: Zimbra Packaging Services <build@zimbra.com>
+Uploaders: Zimbra Packaging Services <build@zimbra.com>
+
+Package: @@PKG_NAME@@
+Section: mail
+Priority: optional
+Version: @@PKG_VERSION@@
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, @@PKG_DEPENDS@@
+Description: @@PKG_SUMMARY@@
