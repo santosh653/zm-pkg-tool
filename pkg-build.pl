@@ -51,14 +51,17 @@ sub LoadConfiguration($)
 
    if ( !defined $val )
    {
-      my $file = "$cmd_hash->{'pkg-path'}/config.pl";
-      my $hash = LoadProperties($file)
-        if ( -f $file );
-
-      if ( $hash && exists $hash->{$cfg_name} )
+      if ( $CFG{CFG_DIR} )
       {
-         $val = $hash->{$cfg_name};
-         $src = "config"
+         my $file = "$CFG{CFG_DIR}/config.pl";
+         my $hash = LoadProperties($file)
+           if ( -f $file );
+
+         if ( $hash && exists $hash->{$cfg_name} )
+         {
+            $val = $hash->{$cfg_name};
+            $src = "config"
+         }
       }
    }
 
@@ -215,13 +218,19 @@ sub Init()
    my %cmd_hash = ();
 
    my @cmd_args = (
-      { name => "PKG_PATH",         type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not unspecfied"); }, },
-      { name => "PKG_TYPE",         type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "all"; }, },
+      { name => "CFG_DIR",          type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "pkg-spec"; }, },
+      { name => "OUT_TYPE",         type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "all"; }, },
+      { name => "OUT_BASE_DIR",     type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "build"; }, },
+      { name => "OUT_TEMP_DIR",     type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "$CFG{OUT_BASE_DIR}/tmp"; }, },
+      { name => "OUT_STAGE_DIR",    type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "$CFG{OUT_BASE_DIR}/stage"; }, },
+      { name => "OUT_DIST_DIR",     type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "$CFG{OUT_BASE_DIR}/dist"; }, },
+      { name => "PKG_NAME",         type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not unspecfied"); }, },
       { name => "PKG_RELEASE",      type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
+      { name => "PKG_OS_TAG",       type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return GetOsTag(); }, },
       { name => "PKG_VERSION",      type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
       { name => "PKG_SUMMARY",      type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
       { name => "PKG_INSTALL_LIST", type => "=s@", hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
-      { name => "PKG_DEPENDS_LIST", type => "=s@", hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
+      { name => "PKG_DEPENDS_LIST", type => "=s@", hash_src => \%cmd_hash, default_sub => sub { return []; }, },
    );
 
    {
@@ -251,99 +260,100 @@ sub Init()
 
 sub Build()
 {
-   if ( my $pkg_name = basename( $CFG{PKG_PATH} ) )
+   System("rm -f '$CFG{OUT_DIST_DIR}/$CFG{PKG_NAME}'_* '$CFG{OUT_DIST_DIR}/$CFG{PKG_NAME}'-*.rpm");
+   System( "rm",    "-rf", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
+   System( "mkdir", "-p",  "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
+   System( "mkdir", "-p",  "$CFG{OUT_DIST_DIR}/" );
+
+   if ( -f "/etc/redhat-release" )
    {
-      System( "rm -f 'bld/dist/${pkg_name}'_*" );
-      System( "rm",    "-rf", "bld/tmp/$pkg_name/" );
-      System( "mkdir", "-p",  "bld/tmp/$pkg_name/" );
-      System( "mkdir", "-p",  "bld/dist/" );
+      System( "cp", "-a", "$GLOBAL_PATH_TO_SCRIPT_DIR/default-template/rpm", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
+      System( "cp", "-a", "$CFG{CFG_DIR}/rpm", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/SPECS" ) if ( -d "$CFG{CFG_DIR}/rpm" );
+   }
+   elsif ( -f "/etc/lsb-release" )
+   {
+      System( "cp", "-a", "$GLOBAL_PATH_TO_SCRIPT_DIR/default-template/debian", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
+      System( "cp", "-a", "$CFG{CFG_DIR}/debian", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" ) if ( -d "$CFG{CFG_DIR}/debian" );
+   }
+   else
+   {
+      Die("Unknown OS");
+   }
 
-      if ( -f "/etc/redhat-release" )
+   find(
       {
-         System( "cp", "-a", "$GLOBAL_PATH_TO_SCRIPT_DIR/default-template/rpm", "bld/tmp/$pkg_name/" );
-         System( "cp", "-a", "$CFG{PKG_PATH}/rpm", "bld/tmp/$pkg_name/SPECS" ) if ( -d "$CFG{PKG_PATH}/rpm" );
-      }
-      elsif ( -f "/etc/lsb-release" )
-      {
-         System( "cp", "-a", "$GLOBAL_PATH_TO_SCRIPT_DIR/default-template/debian", "bld/tmp/$pkg_name/" );
-         System( "cp", "-a", "$CFG{PKG_PATH}/debian", "bld/tmp/$pkg_name/" ) if ( -d "$CFG{PKG_PATH}/debian" );
-      }
-      else
-      {
-         Die("Unknown OS");
-      }
+         wanted => sub {
+            my $tpl_file = $_;
+            if ( -f $tpl_file && $tpl_file =~ /[.]in$/ )
+            {
+               s/[.]in$// for ( my $new_file = $tpl_file );
 
-      find(
-         {
-            wanted => sub {
-               my $tpl_file = $_;
-               if ( -f $tpl_file && $tpl_file =~ /[.]in$/ )
+               open( FDr, "<", "$tpl_file" );
+               open( FDw, ">", "$new_file" );
+
+               while ( my $line = <FDr> )
                {
-                  s/[.]in$// for ( my $new_file = $tpl_file );
-
-                  open( FDr, "<", "$tpl_file" );
-                  open( FDw, ">", "$new_file" );
-
-                  while ( my $line = <FDr> )
                   {
-                     {
-                        my $pkg_install_list =
-                          ( $tpl_file =~ /install[.]in/ )
-                          ? join( "\n", map { $_ =~ s,^/,,; $_ } @{ $CFG{PKG_INSTALL_LIST} } )
-                          : join( "\n", @{ $CFG{PKG_INSTALL_LIST} } );
+                     my $pkg_install_list =
+                       ( $tpl_file =~ /install[.]in/ )
+                       ? join( "\n", map { $_ =~ s,^/,,; $_ } @{ $CFG{PKG_INSTALL_LIST} } )
+                       : join( "\n", @{ $CFG{PKG_INSTALL_LIST} } );
 
-                        $line =~ s/[@][@]PKG_INSTALL[@][@]/$pkg_install_list/g;
-                     }
-
-                     $line =~ s/[@][@]PKG_NAME[@][@]/$pkg_name/g;
-                     $line =~ s/[@][@]PKG_RELEASE[@][@]/$CFG{PKG_RELEASE}.@{[GetOsTag()]}/g;
-                     $line =~ s/[@][@]PKG_VERSION[@][@]/$CFG{PKG_VERSION}/g;
-                     $line =~ s/[@][@]PKG_SUMMARY[@][@]/$CFG{PKG_SUMMARY}/g;
-                     $line =~ s/[@][@]PKG_DEPENDS[@][@]/@{[join(",",@{$CFG{PKG_DEPENDS_LIST}})]}/g;
-
-                     print FDw $line;
+                     $line =~ s/[@][@]PKG_INSTALL_LIST[@][@]/$pkg_install_list/g;
                   }
 
-                  close(FDr);
-                  close(FDw);
+                  $line =~ s/[@][@]PKG_NAME[@][@]/$CFG{PKG_NAME}/g;
+                  $line =~ s/[@][@]PKG_OS_TAG[@][@]/$CFG{PKG_OS_TAG}/g;
+                  $line =~ s/[@][@]PKG_RELEASE[@][@]/$CFG{PKG_RELEASE}/g;
+                  $line =~ s/[@][@]PKG_VERSION[@][@]/$CFG{PKG_VERSION}/g;
+                  $line =~ s/[@][@]PKG_SUMMARY[@][@]/$CFG{PKG_SUMMARY}/g;
+                  $line =~ s/[@][@]PKG_DEPENDS_LIST[@][@]/@{[join(",",@{$CFG{PKG_DEPENDS_LIST}})]}/g;
 
-                  unlink($tpl_file);
+                  print FDw $line;
                }
-            },
+
+               close(FDr);
+               close(FDw);
+
+               unlink($tpl_file);
+            }
          },
-         "bld/tmp/$pkg_name"
-      );
+      },
+      "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}"
+   );
 
-      System("make -f '$CFG{PKG_PATH}/Makefile' 'PKG_NAME=$pkg_name' 'PKG_STAGE_DIR=bld/stage/$pkg_name' stage")
-         if ( -f "$CFG{PKG_PATH}/Makefile" );
+   System("make -f '$CFG{CFG_DIR}/Makefile' 'PKG_NAME=$CFG{PKG_NAME}' 'PKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}' stage")
+     if ( -f "$CFG{CFG_DIR}/Makefile" );
 
-      if ( -f "/etc/redhat-release" )
-      {
-         my $CWD = getcwd();
+   System("ant -f '$CFG{CFG_DIR}/build.xml' '-DPKG_NAME=$CFG{PKG_NAME}' '-DPKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}' stage")
+     if ( -f "$CFG{CFG_DIR}/build.xml" );
 
-	 System("mkdir -p 'bld/tmp/$pkg_name/BUILDROOT/'");
-	 System("cp -a -t 'bld/tmp/$pkg_name/BUILDROOT/' 'bld/stage/$pkg_name/'*");
-         System("rpmbuild -v --define '_topdir $CWD/bld/tmp/$pkg_name' '--buildroot=$CWD/bld/tmp/$pkg_name/BUILDROOT/' -ba 'bld/tmp/$pkg_name/rpm'/1.spec");
+   if ( -f "/etc/redhat-release" )
+   {
+      my $CWD = getcwd();
 
-         print "\n\n";
-         print "=========================================================================================================\n";
-         System("mv -v 'bld/tmp/${pkg_name}/SRPMS/'*.rpm 'bld/tmp/${pkg_name}/RPMS'/*/*.rpm bld/dist/");
-         print "=========================================================================================================\n";
-      }
-      elsif ( -f "/etc/lsb-release" )
-      {
-         System("cp -a -t 'bld/tmp/$pkg_name/' 'bld/stage/$pkg_name'/*");
-         System("cd 'bld/tmp/$pkg_name' && dpkg-buildpackage");
+      System("mkdir -p '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/'");
+      System("cp -a -t '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/' '$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}/'*");
+      System("rpmbuild -v --define '_topdir $CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' '--buildroot=$CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/' -ba '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/rpm'/1.spec");
 
-         print "\n\n";
-         print "=========================================================================================================\n";
-         System("mv -v 'bld/tmp/${pkg_name}'_*.* bld/dist/");
-         print "=========================================================================================================\n";
-      }
-      else
-      {
-         Die("Unknown OS");
-      }
+      print "\n\n";
+      print "=========================================================================================================\n";
+      System("mv -v '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/SRPMS/'*.rpm '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/RPMS'/*/*.rpm '$CFG{OUT_DIST_DIR}/'");
+      print "=========================================================================================================\n";
+   }
+   elsif ( -f "/etc/lsb-release" )
+   {
+      System("cp -a -t '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/' '$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}'/*");
+      System("cd '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' && dpkg-buildpackage");
+
+      print "\n\n";
+      print "=========================================================================================================\n";
+      System("mv -v '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}'_*.* '$CFG{OUT_DIST_DIR}/'");
+      print "=========================================================================================================\n";
+   }
+   else
+   {
+      Die("Unknown OS");
    }
 }
 

@@ -4,14 +4,14 @@
 Summary: @@PKG_SUMMARY@@
 Name: @@PKG_NAME@@
 Version: @@PKG_VERSION@@
-Release: @@PKG_RELEASE@@
+Release: @@PKG_RELEASE@@.@@PKG_OS_TAG@@
 License: ZPL and other
 Group: Applications/Messaging
 URL: http://www.zimbra.com
 Vendor: Zimbra, Inc.
 Packager: Zimbra Packaging Services <build@zimbra.com>
 AutoReqProv: no
-Requires: @@PKG_DEPENDS@@
+Requires: @@PKG_DEPENDS_LIST@@
 
 %description
 @@PKG_SUMMARY@@
@@ -35,4 +35,4 @@ Requires: @@PKG_DEPENDS@@
 %postun
 
 %files
-@@PKG_INSTALL@@
+@@PKG_INSTALL_LIST@@

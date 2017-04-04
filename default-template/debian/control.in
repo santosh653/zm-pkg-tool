@@ -11,5 +11,5 @@ Section: mail
 Priority: optional
 Version: @@PKG_VERSION@@
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, @@PKG_DEPENDS@@
+Depends: ${shlibs:Depends}, ${misc:Depends}, @@PKG_DEPENDS_LIST@@
 Description: @@PKG_SUMMARY@@
