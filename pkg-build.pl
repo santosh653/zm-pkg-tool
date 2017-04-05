@@ -330,11 +330,15 @@ sub Build()
 
    if ( -f "/etc/redhat-release" )
    {
+      my $pkg_type_opts = "-ba";
+      $pkg_type_opts .= "-b" if ( $CFG{OUT_TYPE} eq "binary" );
+      $pkg_type_opts .= "-S" if ( $CFG{OUT_TYPE} eq "source" );
+
       my $CWD = getcwd();
 
       System("mkdir -p '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/'");
       System("cp -a -t '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/' '$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}/'*");
-      System("rpmbuild -v --define '_topdir $CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' '--buildroot=$CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/' -ba '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/rpm'/1.spec");
+      System("rpmbuild -v --define '_topdir $CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' '--buildroot=$CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/' $pkg_type_opts '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/rpm'/1.spec");
 
       print "\n\n";
       print "=========================================================================================================\n";
@@ -343,8 +347,12 @@ sub Build()
    }
    elsif ( -f "/etc/lsb-release" )
    {
+      my $pkg_type_opts = "";
+      $pkg_type_opts .= "-b" if ( $CFG{OUT_TYPE} eq "binary" );
+      $pkg_type_opts .= "-S" if ( $CFG{OUT_TYPE} eq "source" );
+
       System("cp -a -t '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/' '$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}'/*");
-      System("cd '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' && dpkg-buildpackage");
+      System("cd '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' && dpkg-buildpackage $pkg_type_opts");
 
       print "\n\n";
       print "=========================================================================================================\n";
