@@ -322,11 +322,11 @@ sub Build()
       "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}"
    );
 
-   System("make -f '$CFG{CFG_DIR}/Makefile' 'PKG_NAME=$CFG{PKG_NAME}' 'PKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}' stage")
-     if ( -f "$CFG{CFG_DIR}/Makefile" );
+   System("make -f '$CFG{CFG_DIR}/$CFG{PKG_NAME}/Makefile' 'PKG_NAME=$CFG{PKG_NAME}' 'PKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}' stage")
+     if ( -f "$CFG{CFG_DIR}/$CFG{PKG_NAME}/Makefile" );
 
-   System("ant -f '$CFG{CFG_DIR}/build.xml' '-DPKG_NAME=$CFG{PKG_NAME}' '-DPKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}' stage")
-     if ( -f "$CFG{CFG_DIR}/build.xml" );
+   System("ant -f '$CFG{CFG_DIR}/$CFG{PKG_NAME}/build.xml' '-DPKG_NAME=$CFG{PKG_NAME}' '-DPKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}' stage")
+     if ( -f "$CFG{CFG_DIR}/$CFG{PKG_NAME}/build.xml" );
 
    if ( -f "/etc/redhat-release" )
    {
