@@ -9,7 +9,6 @@ Uploaders: Zimbra Packaging Services <build@zimbra.com>
 Package: @@PKG_NAME@@
 Section: mail
 Priority: optional
-Version: @@PKG_VERSION@@
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, @@PKG_DEPENDS_LIST@@
 Description: @@PKG_SUMMARY@@
