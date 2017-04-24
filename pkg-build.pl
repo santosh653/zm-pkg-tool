@@ -331,8 +331,8 @@ sub Build()
    if ( -f "/etc/redhat-release" )
    {
       my $pkg_type_opts = "-ba";
-      $pkg_type_opts .= "-b" if ( $CFG{OUT_TYPE} eq "binary" );
-      $pkg_type_opts .= "-S" if ( $CFG{OUT_TYPE} eq "source" );
+      $pkg_type_opts = "-bb" if ( $CFG{OUT_TYPE} eq "binary" );
+      $pkg_type_opts = "-bs" if ( $CFG{OUT_TYPE} eq "source" );
 
       my $CWD = getcwd();
 
@@ -347,9 +347,9 @@ sub Build()
    }
    elsif ( -f "/etc/lsb-release" )
    {
-      my $pkg_type_opts = "";
-      $pkg_type_opts .= "-b" if ( $CFG{OUT_TYPE} eq "binary" );
-      $pkg_type_opts .= "-S" if ( $CFG{OUT_TYPE} eq "source" );
+      my $pkg_type_opts = "-uc -us";
+      $pkg_type_opts .= " -b" if ( $CFG{OUT_TYPE} eq "binary" );
+      $pkg_type_opts .= " -S" if ( $CFG{OUT_TYPE} eq "source" );
 
       System("cp -a -t '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/' '$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}'/*");
       System("cd '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' && dpkg-buildpackage $pkg_type_opts");
