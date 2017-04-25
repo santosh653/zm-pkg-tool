@@ -12,6 +12,8 @@ Vendor: Zimbra, Inc.
 Packager: Zimbra Packaging Services <build@zimbra.com>
 AutoReqProv: no
 Requires: @@PKG_DEPENDS_LIST@@
+Provides: @@PKG_PROVIDES_LIST@@
+Conflicts: @@PKG_CONFLICTS_LIST@@
 
 %description
 @@PKG_SUMMARY@@
