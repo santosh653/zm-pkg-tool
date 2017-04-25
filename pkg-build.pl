@@ -229,7 +229,7 @@ sub Init()
       { name => "PKG_OS_TAG",       type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return GetOsTag(); }, },
       { name => "PKG_VERSION",      type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
       { name => "PKG_SUMMARY",      type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
-      { name => "PKG_INSTALL_LIST", type => "=s@", hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
+      { name => "PKG_INSTALL_LIST", type => "=s@", hash_src => \%cmd_hash, default_sub => sub { return ["/"]; }, },
       { name => "PKG_DEPENDS_LIST", type => "=s@", hash_src => \%cmd_hash, default_sub => sub { return []; }, },
    );
 
@@ -337,7 +337,7 @@ sub Build()
       my $CWD = getcwd();
 
       System("mkdir -p '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/'");
-      System("cp -a -t '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/' '$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}/'*");
+      System( "cp", "-a", $_, "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/@{[basename $_]}" ) foreach glob("$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}/*");
       System("rpmbuild -v --define '_topdir $CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' '--buildroot=$CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/' $pkg_type_opts '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/rpm'/1.spec");
 
       print "\n\n";
@@ -351,7 +351,7 @@ sub Build()
       $pkg_type_opts .= " -b" if ( $CFG{OUT_TYPE} eq "binary" );
       $pkg_type_opts .= " -S" if ( $CFG{OUT_TYPE} eq "source" );
 
-      System("cp -a -t '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/' '$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}'/*");
+      System( "cp", "-a", $_, "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/@{[basename $_]}" ) foreach glob("$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}/*");
       System("cd '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' && dpkg-buildpackage $pkg_type_opts");
 
       print "\n\n";
