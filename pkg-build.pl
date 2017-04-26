@@ -542,7 +542,13 @@ sub Build()
                   $line =~ s/[@][@]PKG_PROVIDES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES_LIST})]}/g;
                   $line =~ s/[@][@]PKG_CONFLICTS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_CONFLICTS_LIST})]}/g;
 
-                  print FDw $line;
+                  if( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:]\s*$/ ) # drop lines with empty headers
+                  {
+                  }
+                  else
+                  {
+                     print FDw $line;
+                  }
                }
 
                close(FDr);
