@@ -542,7 +542,7 @@ sub Build()
                   $line =~ s/[@][@]PKG_PROVIDES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES_LIST})]}/g;
                   $line =~ s/[@][@]PKG_CONFLICTS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_CONFLICTS_LIST})]}/g;
 
-                  if( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:]\s*$/ ) # drop lines with empty headers
+                  if ( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:]\s*$/ )    # drop lines with empty headers
                   {
                   }
                   else
@@ -581,7 +581,8 @@ sub Build()
 
       print "\n\n";
       print "=========================================================================================================\n";
-      System("mv -v '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/SRPMS/'*.rpm '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/RPMS'/*/*.rpm '$CFG{OUT_DIST_DIR}/'");
+      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/SRPMS/*.rpm");
+      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/RPMS/*/*.rpm");
       print "=========================================================================================================\n";
    }
    elsif ( $CFG{PKG_FORMAT} eq "deb" )
@@ -595,7 +596,7 @@ sub Build()
 
       print "\n\n";
       print "=========================================================================================================\n";
-      System("mv -v '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}'_*.* '$CFG{OUT_DIST_DIR}/'");
+      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}_*.*");
       print "=========================================================================================================\n";
    }
    else
