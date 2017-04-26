@@ -31,9 +31,10 @@ sub LoadConfiguration($)
 {
    my $args = shift;
 
-   my $cfg_name    = $args->{name};
-   my $cmd_hash    = $args->{hash_src};
-   my $default_sub = $args->{default_sub};
+   my $cfg_name     = $args->{name};
+   my $cmd_hash     = $args->{hash_src};
+   my $default_sub  = $args->{default_sub};
+   my $validate_sub = $args->{validate_sub};
 
    my $val;
    my $src;
@@ -65,31 +66,42 @@ sub LoadConfiguration($)
       }
    }
 
-   if ( !defined $val )
+   my $valid = 1;
+
+   if ( defined $val )
+   {
+      $valid = &$validate_sub($val)
+        if ($validate_sub);
+   }
+
+   if ( !defined $val || !$valid )
    {
       if ($default_sub)
       {
          $val = &$default_sub($cfg_name);
-         $src = "default";
+         $src = "default" . ( $valid ? "" : "($src was rejected)" );
       }
    }
 
    if ( defined $val )
    {
+      $valid = &$validate_sub($val)
+        if ($validate_sub);
+
       if ( ref($val) eq "HASH" )
       {
          foreach my $k ( keys %{$val} )
          {
             $CFG{$cfg_name}{$k} = ${$val}{$k};
 
-            printf( " %-25s: %-17s : %s\n", $cfg_name, $cmd_hash ? $src : "detected", $k . " => " . ${$val}{$k} );
+            printf( " %-25s: %-17s : %s\n", $cfg_name, $cmd_hash ? $src : "detected", "{" . $k . " => " . ${$val}{$k} . "}" );
          }
       }
       elsif ( ref($val) eq "ARRAY" )
       {
          $CFG{$cfg_name} = $val;
 
-         printf( " %-25s: %-17s : %s\n", $cfg_name, $cmd_hash ? $src : "detected", "(" . join( ",", @{ $CFG{$cfg_name} } ) . ")" );
+         printf( " %-25s: %-17s : %s\n", $cfg_name, $cmd_hash ? $src : "detected", "[" . join( ", ", @{ $CFG{$cfg_name} } ) . "]" );
       }
       else
       {
@@ -133,12 +145,12 @@ sub Die($;$)
 
 sub assert($$;$)
 {
-   my $l = shift;
-   my $r = shift;
+   my $l = shift || "";
+   my $r = shift || "";
    my $m = shift || "";
 
-   Die($m)
-      if($l ne $r);
+   Die( $m, "Got:[$l] != Exp:[$r]" )
+     if ( $l ne $r );
 }
 
 sub LoadProperties($)
@@ -239,27 +251,50 @@ sub GetOsTag()
    }
 }
 
+sub _StripEndNum($)
+{
+   my $name = shift;
+
+   s/[-]?[0-9][-.0-9]*$//g for ( my $stripped = $name );
+
+   return $stripped;
+}
+
+sub _ValidateOutType($)
+{
+   my $ty = shift;
+
+   if ( defined $ty )
+   {
+      return 1 if ( $ty eq "all" );
+      return 1 if ( $ty eq "source" );
+      return 1 if ( $ty eq "binary" );
+   }
+
+   return undef;
+}
+
 sub Init()
 {
    my %cmd_hash = ();
 
    my @cmd_args = (
-      { name => "CFG_DIR",            type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "pkg-spec"; }, },
-      { name => "OUT_TYPE",           type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "all"; }, },
-      { name => "OUT_BASE_DIR",       type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "build"; }, },
-      { name => "OUT_TEMP_DIR",       type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "$CFG{OUT_BASE_DIR}/tmp"; }, },
-      { name => "OUT_STAGE_DIR",      type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "$CFG{OUT_BASE_DIR}/stage"; }, },
-      { name => "OUT_DIST_DIR",       type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return "$CFG{OUT_BASE_DIR}/dist"; }, },
-      { name => "PKG_NAME",           type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not unspecfied"); }, },
-      { name => "PKG_RELEASE",        type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
-      { name => "PKG_VERSION",        type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
-      { name => "PKG_SUMMARY",        type => "=s",  hash_src => \%cmd_hash, default_sub => sub { return Die("@_ not specified"); }, },
-      { name => "PKG_INSTALL_LIST",   type => "=s@", hash_src => \%cmd_hash, default_sub => sub { return ["/"]; }, },
-      { name => "PKG_DEPENDS_LIST",   type => "=s@", hash_src => \%cmd_hash, default_sub => sub { return []; }, },
-      { name => "PKG_PROVIDES_LIST",  type => "=s@", hash_src => \%cmd_hash, default_sub => sub { s/[-]?[0-9][-.0-9]*$//g for ( my $strip_pkg_num = $CFG{PKG_NAME} ); return [$strip_pkg_num]; }, },
-      { name => "PKG_CONFLICTS_LIST", type => "=s@", hash_src => \%cmd_hash, default_sub => sub { s/[-]?[0-9][-.0-9]*$//g for ( my $strip_pkg_num = $CFG{PKG_NAME} ); return [$strip_pkg_num]; }, },
-      { name => "PKG_OS_TAG",         type => "",    hash_src => \%cmd_hash, default_sub => sub { return GetOsTag(); }, },
-      { name => "PKG_FORMAT",         type => "",    hash_src => \%cmd_hash, default_sub => sub { return GetPkgFormat(); }, },
+      { name => "CFG_DIR", type => "=s", hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return "pkg-spec"; }, },
+      { name => "OUT_TYPE", type => "=s", hash_src => \%cmd_hash, validate_sub => &_ValidateOutType, default_sub => sub { return "all"; }, },
+      { name => "OUT_BASE_DIR",            type => "=s",  hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return "build"; }, },
+      { name => "OUT_TEMP_DIR",            type => "=s",  hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return "$CFG{OUT_BASE_DIR}/tmp"; }, },
+      { name => "OUT_STAGE_DIR",           type => "=s",  hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return "$CFG{OUT_BASE_DIR}/stage"; }, },
+      { name => "OUT_DIST_DIR",            type => "=s",  hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return "$CFG{OUT_BASE_DIR}/dist"; }, },
+      { name => "PKG_NAME",                type => "=s",  hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return Die("@_ not unspecfied"); }, },
+      { name => "PKG_RELEASE",             type => "=s",  hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return Die("@_ not specified"); }, },
+      { name => "PKG_VERSION",             type => "=s",  hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return Die("@_ not specified"); }, },
+      { name => "PKG_SUMMARY",             type => "=s",  hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return Die("@_ not specified"); }, },
+      { name => "PKG_INSTALL_LIST",        type => "=s@", hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return ["/"]; }, },
+      { name => "PKG_DEPENDS_LIST",        type => "=s@", hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return []; }, },
+      { name => "PKG_PROVIDES_LIST",       type => "=s@", hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return [ _StripEndNum( $CFG{PKG_NAME} ) ]; }, },
+      { name => "PKG_CONFLICTS_LIST",      type => "=s@", hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return [ _StripEndNum( $CFG{PKG_NAME} ) ]; }, },
+      { name => "PKG_OS_TAG",              type => "",    hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return GetOsTag(); }, },
+      { name => "PKG_FORMAT",              type => "",    hash_src => \%cmd_hash, validate_sub => undef, default_sub => sub { return GetPkgFormat(); }, },
    );
 
    {
@@ -291,50 +326,67 @@ sub Init()
 sub _SanitizePkgList($;$)
 {
    my $list = shift;
-   my $use_ver = shift || 1;
+   my $strip_ver = shift || 0;
 
    my $san_list = "";
-   my $sep      = "";
    foreach my $entry ( @{$list} )
    {
       $entry =~ s/\s//g;
+      $entry =~ s/\<or\>/|/g;
+      $entry =~ s/[|][|]*/|/g;
 
-      # abc-2.5            -> $pkn
-      # abc-2.5>=2.1.0-1   -> $pkn$cmp$ver
-      # abc-2.5(>=2.1.0-1) -> $pkn($cmp$ver)
-      if ( $entry =~ m/^([^>=<]+)([>=<]*)(.*)$/ )
+      my @comp = split( /[|]/, $entry );
+
+      my $san_entry = "";
+      foreach my $comp_entry (@comp)
       {
-         my $pkn = $1;
-         my $cmp = $2;
-         my $ver = $3;
-
-         $pkn =~ s/[(]$//;
-         $ver =~ s/[)]$//;
-
-         if ($pkn)
+         # abc-2.5            -> $pkn
+         # abc-2.5>=2.1.0-1   -> $pkn$cmp$ver
+         # abc-2.5(>=2.1.0-1) -> $pkn($cmp$ver)
+         if ( $comp_entry =~ m/^([^>=<]+)([>=<]*)(.*)$/ )
          {
-            $san_list .= $sep . $pkn;
-            $sep = ", ";
+            my $pkn = $1;
+            my $cmp = $2;
+            my $ver = $3;
 
-            if ( $use_ver && $cmp && $ver )
+            $pkn =~ s/[(]$//;
+            $ver =~ s/[)]$//;
+
+            my $san_comp = "";
+
+            if ($pkn)
             {
-               if ( $CFG{PKG_FORMAT} eq "deb" )
-               {
-                  $cmp = ">>" if ( $cmp eq ">" );
-                  $cmp = "<<" if ( $cmp eq "<" );
+               $san_comp = $pkn;
 
-                  $san_list .= " (" . $cmp . $ver . ")";
-               }
-               if ( $CFG{PKG_FORMAT} eq "rpm" )
+               if ( !$strip_ver && $cmp && $ver )
                {
-                  $cmp = ">" if ( $cmp eq ">>" );
-                  $cmp = "<" if ( $cmp eq "<<" );
+                  if ( $CFG{PKG_FORMAT} eq "deb" )
+                  {
+                     $cmp = ">>" if ( $cmp eq ">" );
+                     $cmp = "<<" if ( $cmp eq "<" );
+                     $cmp = "="  if ( $cmp eq "==" );
 
-                  $san_list .= " " . $cmp . $ver;
+                     $san_comp .= " (" . $cmp . " " . $ver . ")";
+                  }
+                  if ( $CFG{PKG_FORMAT} eq "rpm" )
+                  {
+                     $cmp = ">" if ( $cmp eq ">>" );
+                     $cmp = "<" if ( $cmp eq "<<" );
+                     $cmp = "=" if ( $cmp eq "==" );
+
+                     $san_comp .= " " . $cmp . " " . $ver;
+                  }
                }
             }
+
+            $san_entry .= ( $san_entry && $san_comp ? " | " : "" ) . $san_comp
+              if ( $CFG{PKG_FORMAT} eq "deb" );
+            $san_entry .= ( $san_entry && $san_comp ? " or " : "" ) . $san_comp
+              if ( $CFG{PKG_FORMAT} eq "rpm" );
          }
       }
+
+      $san_list .= ( $san_list && $san_entry ? ", " : "" ) . $san_entry;
    }
 
    return $san_list;
@@ -450,16 +502,24 @@ sub Build()
    }
 }
 
-sub Test()
+sub SelfTest()
 {
-   assert( _SanitizePkgList(["abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl"]), "abc-3.4 (>=4.4), def-6.7 (>> 6.6.1), ghi (=7.0), jkl" );
+   if ( GetPkgFormat() eq "DEB" )
+   {
+      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb" ] ), "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1), ghi (= 7.0), jkl, aaa | bbb" );
+   }
+
+   if ( GetPkgFormat() eq "RPM" )
+   {
+      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb" ] ), "abc-3.4 >= 4.4, def-6.7 > 6.6-1, ghi = 7.0, jkl, aaa or bbb" );
+   }
 }
 
 
 sub main()
 {
-   Test();
    Init();
+   SelfTest();
    Build();
 }
 
