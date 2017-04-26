@@ -27,12 +27,40 @@ Obsoletes: @@PKG_OBSOLETES_LIST@@
 %install
 
 %pre
+if [ "$1" = "1" ]; then
+   :
+   # Install
+elif [ "$1" = "2" ]; then
+   :
+   # Upgrade
+fi
 
 %post
+if [ "$1" = "1" ]; then
+   :
+   # Install
+elif [ "$1" = "2" ]; then
+   :
+   # Upgrade
+fi
 
 %preun
+if [ "$1" = "1" ]; then
+   :
+   # Upgrade
+elif [ "$1" = "0" ]; then
+   :
+   # Uninstallation
+fi
 
 %postun
+if [ "$1" = "1" ]; then
+   :
+   # Upgrade
+elif [ "$1" = "0" ]; then
+   :
+   # Uninstallation
+fi
 
 %files
 @@PKG_INSTALL_LIST@@

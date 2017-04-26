@@ -369,6 +369,20 @@ sub Init()
          default_sub  => sub { return []; },
       },
       {
+         name         => "PKG_PRE_INSTALL_SCRIPT",
+         type         => "=s",
+         hash_src     => \%cmd_hash,
+         validate_sub => undef,
+         default_sub  => sub { return undef; },
+      },
+      {
+         name         => "PKG_POST_INSTALL_SCRIPT",
+         type         => "=s",
+         hash_src     => \%cmd_hash,
+         validate_sub => undef,
+         default_sub  => sub { return undef; },
+      },
+      {
          name         => "PKG_OS_TAG",
          type         => "",
          hash_src     => \%cmd_hash,
