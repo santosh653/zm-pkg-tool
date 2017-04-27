@@ -251,11 +251,11 @@ sub GetOsTag()
    }
 }
 
-sub _StripEndNum($)
+sub _StripVersionFromPkgName($)
 {
    my $name = shift;
 
-   s/[-]?[0-9][-.0-9]*$//g for ( my $stripped = $name );
+   s/[-]?[0-9][-.0-9]*$//, s/[-]v$// for ( my $stripped = $name );
 
    return $stripped;
 }
@@ -368,14 +368,14 @@ sub Init()
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
-         default_sub  => sub { return [ _StripEndNum( $CFG{PKG_NAME} ) ]; },
+         default_sub  => sub { return [ _StripVersionFromPkgName( $CFG{PKG_NAME} ) ]; },
       },
       {
          name         => "PKG_CONFLICTS_LIST",
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
-         default_sub  => sub { return [ _StripEndNum( $CFG{PKG_NAME} ) ]; },
+         default_sub  => sub { return [ _StripVersionFromPkgName( $CFG{PKG_NAME} ) ]; },
       },
       {
          name         => "PKG_OS_TAG",
@@ -609,12 +609,12 @@ sub SelfTest()
 {
    if ( GetPkgFormat() eq "DEB" )
    {
-      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb" ] ), "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1), ghi (= 7.0), jkl, aaa | bbb" );
+      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ] ), "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1), ghi (= 7.0), jkl, aaa | bbb | perl(Carp) (>= 3.2)" );
    }
 
    if ( GetPkgFormat() eq "RPM" )
    {
-      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb" ] ), "abc-3.4 >= 4.4, def-6.7 > 6.6-1, ghi = 7.0, jkl, aaa or bbb" );
+      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ] ), "abc-3.4 >= 4.4, def-6.7 > 6.6-1, ghi = 7.0, jkl, aaa or bbb or perl(Carp) >= 3.2" );
    }
 }
 
