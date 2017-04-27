@@ -354,7 +354,7 @@ sub Init()
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
-         default_sub  => sub { return ["/"]; },
+         default_sub  => sub { return []; },
       },
       {
          name         => "PKG_DEPENDS_LIST",
