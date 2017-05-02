@@ -1,7 +1,7 @@
 Summary: @@PKG_SUMMARY@@
 Name: @@PKG_NAME@@
 Version: @@PKG_VERSION@@
-Release: @@PKG_RELEASE@@.@@PKG_OS_TAG@@
+Release: @@PKG_RELEASE@@
 License: ZPL and other
 Group: Applications/Messaging
 URL: http://www.zimbra.com

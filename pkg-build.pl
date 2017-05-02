@@ -383,13 +383,6 @@ sub Init()
          default_sub  => sub { return undef; },
       },
       {
-         name         => "PKG_OS_TAG",
-         type         => "",
-         hash_src     => \%cmd_hash,
-         validate_sub => undef,
-         default_sub  => sub { return GetOsTag(); },
-      },
-      {
          name         => "PKG_FORMAT",
          type         => "",
          hash_src     => \%cmd_hash,
@@ -496,10 +489,12 @@ sub _SanitizePkgList($;$)
 
 sub Build()
 {
-   System("rm -f '$CFG{OUT_DIST_DIR}/$CFG{PKG_NAME}'_* '$CFG{OUT_DIST_DIR}/$CFG{PKG_NAME}'-*.rpm");
+   my $ostag = GetOsTag();
+
+   System("rm -f '$CFG{OUT_DIST_DIR}/$ostag/$CFG{PKG_NAME}'_* '$CFG{OUT_DIST_DIR}/$ostag/$CFG{PKG_NAME}'-*.rpm");
    System( "rm",    "-rf", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
    System( "mkdir", "-p",  "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
-   System( "mkdir", "-p",  "$CFG{OUT_DIST_DIR}/" );
+   System( "mkdir", "-p",  "$CFG{OUT_DIST_DIR}/$ostag/" );
 
    if ( $CFG{PKG_FORMAT} eq "rpm" )
    {
@@ -539,7 +534,6 @@ sub Build()
                   }
 
                   $line =~ s/[@][@]PKG_NAME[@][@]/$CFG{PKG_NAME}/g;
-                  $line =~ s/[@][@]PKG_OS_TAG[@][@]/$CFG{PKG_OS_TAG}/g;
                   $line =~ s/[@][@]PKG_RELEASE[@][@]/$CFG{PKG_RELEASE}/g;
                   $line =~ s/[@][@]PKG_VERSION[@][@]/$CFG{PKG_VERSION}/g;
                   $line =~ s/[@][@]PKG_SUMMARY[@][@]/$CFG{PKG_SUMMARY}/g;
@@ -586,8 +580,8 @@ sub Build()
 
       print "\n\n";
       print "=========================================================================================================\n";
-      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/SRPMS/*.rpm");
-      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/RPMS/*/*.rpm");
+      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/$ostag/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/SRPMS/*.rpm");
+      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/$ostag/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/RPMS/*/*.rpm");
       print "=========================================================================================================\n";
    }
    elsif ( $CFG{PKG_FORMAT} eq "deb" )
@@ -601,7 +595,7 @@ sub Build()
 
       print "\n\n";
       print "=========================================================================================================\n";
-      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}_*.*");
+      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/$ostag/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}_*.*");
       print "=========================================================================================================\n";
    }
    else
