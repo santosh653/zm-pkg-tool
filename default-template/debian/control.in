@@ -11,6 +11,7 @@ Section: mail
 Priority: optional
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, @@PKG_DEPENDS_LIST@@
+Pre-Depends: @@PKG_PRE_DEPENDS_LIST@@
 Provides: @@PKG_NAME@@, @@PKG_PROVIDES_LIST@@
 Conflicts: @@PKG_NAME@@, @@PKG_OBSOLETES_LIST@@
 Description: @@PKG_SUMMARY@@

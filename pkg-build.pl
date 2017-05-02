@@ -355,6 +355,13 @@ sub Init()
          default_sub  => sub { return []; },
       },
       {
+         name         => "PKG_PRE_DEPENDS_LIST",
+         type         => "=s@",
+         hash_src     => \%cmd_hash,
+         validate_sub => undef,
+         default_sub  => sub { return []; },
+      },
+      {
          name         => "PKG_PROVIDES_LIST",
          type         => "=s@",
          hash_src     => \%cmd_hash,
@@ -538,6 +545,7 @@ sub Build()
                   $line =~ s/[@][@]PKG_VERSION[@][@]/$CFG{PKG_VERSION}/g;
                   $line =~ s/[@][@]PKG_SUMMARY[@][@]/$CFG{PKG_SUMMARY}/g;
                   $line =~ s/[@][@]PKG_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_DEPENDS_LIST})]}/g;
+                  $line =~ s/[@][@]PKG_PRE_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PRE_DEPENDS_LIST})]}/g;
                   $line =~ s/[@][@]PKG_PROVIDES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES_LIST})]}/g;
                   $line =~ s/[@][@]PKG_OBSOLETES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_OBSOLETES_LIST})]}/g;
 
