@@ -251,15 +251,6 @@ sub GetOsTag()
    }
 }
 
-sub _StripVersionFromPkgName($)
-{
-   my $name = shift;
-
-   s/[-]?[0-9][-.0-9]*$//, s/[-]v$// for ( my $stripped = $name );
-
-   return $stripped;
-}
-
 sub _ValidateOutType($)
 {
    my $ty = shift;
@@ -368,14 +359,14 @@ sub Init()
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
-         default_sub  => sub { return [ _StripVersionFromPkgName( $CFG{PKG_NAME} ) ]; },
+         default_sub  => sub { return []; },
       },
       {
          name         => "PKG_CONFLICTS_LIST",
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
-         default_sub  => sub { return [ _StripVersionFromPkgName( $CFG{PKG_NAME} ) ]; },
+         default_sub  => sub { return []; },
       },
       {
          name         => "PKG_OS_TAG",
@@ -542,7 +533,7 @@ sub Build()
                   $line =~ s/[@][@]PKG_PROVIDES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES_LIST})]}/g;
                   $line =~ s/[@][@]PKG_CONFLICTS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_CONFLICTS_LIST})]}/g;
 
-                  if ( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:]\s*$/ )    # drop lines with empty headers
+                  if ( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:](\s*,*\s*)*$/ )    # drop lines with empty headers
                   {
                   }
                   else

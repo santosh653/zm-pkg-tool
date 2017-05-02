@@ -1,6 +1,3 @@
-#
-# spec file for zimbra.rpm
-#
 Summary: @@PKG_SUMMARY@@
 Name: @@PKG_NAME@@
 Version: @@PKG_VERSION@@
@@ -12,8 +9,9 @@ Vendor: Zimbra, Inc.
 Packager: Zimbra Packaging Services <build@zimbra.com>
 AutoReqProv: no
 Requires: @@PKG_DEPENDS_LIST@@
-Provides: @@PKG_PROVIDES_LIST@@
-Conflicts: @@PKG_CONFLICTS_LIST@@
+Provides: @@PKG_NAME@@ = @@PKG_VERSION@@, @@PKG_PROVIDES_LIST@@
+Conflicts: @@PKG_NAME@@ < @@PKG_VERSION@@
+Obsoletes: @@PKG_CONFLICTS_LIST@@
 
 %description
 @@PKG_SUMMARY@@
