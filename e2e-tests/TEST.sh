@@ -140,10 +140,10 @@ pkg_downgrade()
 
    if [ -f /etc/redhat-release ]
    then
-      DEPS=$(yum -y downgrade --disablerepo=* --enablerepo=local-D1 zmb1-abc-svc-8.7.0 2>&1 | grep 'Requires:' | sed -e 's/.*Requires: //' -e 's/ //g' -e 's/=/-/')
+      DEPS=$(yum -y downgrade --disablerepo=* --enablerepo=local-D1 "$pkg-$ver-*" 2>&1 | grep 'Requires:' | sed -e 's/.*Requires: //' -e 's/ //g' -e 's/[<>][=]/-/' -e 's/[=]/-/')
       if [ "$DEPS" ]
       then
-         yum -y downgrade --disablerepo=* --enablerepo=local-D1 "$pkg-$ver" $DEPS
+         yum -y downgrade --disablerepo=* --enablerepo=local-D1 "$pkg-$ver-*" $DEPS
       fi
    else
       DEPS=$(apt-get install -y --allow-unauthenticated --allow-downgrades "$pkg=$ver-*" | grep -o -e 'Depends:.*)' | sed -e 's/Depends: //' -e 's/[( )]//g')
