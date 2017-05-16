@@ -542,6 +542,7 @@ sub Build()
 
                   $line =~ s/[@][@]PKG_NAME[@][@]/$CFG{PKG_NAME}/g;
                   $line =~ s/[@][@]PKG_RELEASE[@][@]/$CFG{PKG_RELEASE}/g;
+                  $line =~ s/[@][@]PKG_OS_TAG[@][@]/$ostag/g;
                   $line =~ s/[@][@]PKG_VERSION[@][@]/$CFG{PKG_VERSION}/g;
                   $line =~ s/[@][@]PKG_SUMMARY[@][@]/$CFG{PKG_SUMMARY}/g;
                   $line =~ s/[@][@]PKG_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_DEPENDS_LIST})]}/g;
