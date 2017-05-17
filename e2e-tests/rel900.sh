@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 deploy()
 {
    SVC_VER=9.0.0; SVC_PKG=1;
@@ -12,7 +14,7 @@ deploy()
    mkdir -p build/stage/zmb2-abc-lib/opt/rr/lib
 
    cat > build/stage/zmb2-abc-lib/opt/rr/lib/my-abc-lib.sh <<EOM
-   MY_ABC_LIB_VER="my-lib-1"
+MY_ABC_LIB_VER="my-lib-1"
 EOM
 
    ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb2-abc-lib --pkg-summary='its zmb-abc-lib' \
@@ -26,10 +28,10 @@ EOM
    mkdir -p build/stage/zmb2-abc-bin/opt/rr/bin
 
    cat > build/stage/zmb2-abc-bin/opt/rr/bin/abc.sh <<EOM
-   set -e
-   source /opt/rr/lib/my-abc-lib.sh
-   echo "my-bin-ver: my-bin-1"
-   echo "my-lib-ver: \$MY_ABC_LIB_VER"
+set -e
+source /opt/rr/lib/my-abc-lib.sh
+echo "my-bin-ver: my-bin-1"
+echo "my-lib-ver: \$MY_ABC_LIB_VER"
 EOM
 
    chmod +x build/stage/zmb2-abc-bin/opt/rr/bin/abc.sh

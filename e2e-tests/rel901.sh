@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 deploy()
 {
    SVC_VER=9.0.1; SVC_PKG=1;
@@ -14,10 +16,10 @@ deploy()
    mkdir -p build/stage/zmb2-abc-bin/opt/rr/bin
 
    cat > build/stage/zmb2-abc-bin/opt/rr/bin/abc.sh <<EOM
-   set -e
-   source /opt/rr/lib/my-abc-lib.sh
-   echo "my-bin-ver: my-bin-2"
-   echo "my-lib-ver: \$MY_ABC_LIB_VER"
+set -e
+source /opt/rr/lib/my-abc-lib.sh
+echo "my-bin-ver: my-bin-2"
+echo "my-lib-ver: \$MY_ABC_LIB_VER"
 EOM
 
    chmod +x build/stage/zmb2-abc-bin/opt/rr/bin/abc.sh

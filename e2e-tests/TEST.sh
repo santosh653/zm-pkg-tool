@@ -8,6 +8,8 @@ then
    exit 1
 fi
 
+echo "See /tmp/pkg-test.log for details"
+
 exec 9>&1
 exec 1>/tmp/pkg-test.log 2>&1
 
