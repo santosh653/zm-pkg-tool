@@ -22,6 +22,7 @@ my %CFG = ();
 
 BEGIN
 {
+   $ENV{ANSI_COLORS_DISABLED} = 1 if ( -t STDOUT );
    $GLOBAL_PATH_TO_SCRIPT_FILE = Cwd::abs_path(__FILE__);
    $GLOBAL_PATH_TO_SCRIPT_DIR  = dirname($GLOBAL_PATH_TO_SCRIPT_FILE);
    $GLOBAL_PATH_TO_TOP         = dirname($GLOBAL_PATH_TO_SCRIPT_DIR);
@@ -235,20 +236,25 @@ sub GetPkgFormat()
 
 sub GetOsTag()
 {
-   if ( -f "/etc/redhat-release" )
+   our $gOSTAG;
+
+   if ( !defined $gOSTAG )
    {
-      chomp( my $v = `sed -n -e '1{s/[^0-9]*/r/; s/[.].*//; p;}' /etc/redhat-release` );
-      return $v;
+      if ( -f "/etc/redhat-release" )
+      {
+         chomp( $gOSTAG = `sed -n -e '1{s/[^0-9]*/r/; s/[.].*//; p;}' /etc/redhat-release` );
+      }
+      elsif ( -f "/etc/lsb-release" )
+      {
+         chomp( $gOSTAG = `sed -n -e '/DISTRIB_RELEASE/{s/.*=/u/; s/[.].*//; p;}' /etc/lsb-release` );
+      }
+      else
+      {
+         Die("Unknown OS");
+      }
    }
-   elsif ( -f "/etc/lsb-release" )
-   {
-      chomp( my $v = `sed -n -e '/DISTRIB_RELEASE/{s/.*=/u/; s/[.].*//; p;}' /etc/lsb-release` );
-      return $v;
-   }
-   else
-   {
-      Die("Unknown OS");
-   }
+
+   return $gOSTAG
 }
 
 sub _ValidateOutType($)
@@ -424,10 +430,10 @@ sub Init()
 }
 
 
-sub _SanitizePkgList($;$)
+sub _SanitizePkgList($$)
 {
-   my $list = shift;
-   my $strip_ver = shift || 0;
+   my $list         = shift;
+   my $strip_os_tag = shift;
 
    my $san_list = "";
    foreach my $entry ( @{$list} )
@@ -459,15 +465,19 @@ sub _SanitizePkgList($;$)
             {
                $san_comp = $pkn;
 
-               if ( !$strip_ver && $cmp && $ver )
+               if ( $cmp && $ver )
                {
+                  # add os_tag if $ver has release specified in it
+                  my $tag = ( !$strip_os_tag && $ver =~ m/[-][^-]*$/ ) ? ".@{[GetOsTag()]}" : "";
+                  print "TAG=$tag\n";
+
                   if ( $CFG{PKG_FORMAT} eq "deb" )
                   {
                      $cmp = ">>" if ( $cmp eq ">" );
                      $cmp = "<<" if ( $cmp eq "<" );
                      $cmp = "="  if ( $cmp eq "==" );
 
-                     $san_comp .= " (" . $cmp . " " . $ver . ")";
+                     $san_comp .= " (" . $cmp . " " . $ver . "$tag)";
                   }
                   if ( $CFG{PKG_FORMAT} eq "rpm" )
                   {
@@ -475,7 +485,7 @@ sub _SanitizePkgList($;$)
                      $cmp = "<" if ( $cmp eq "<<" );
                      $cmp = "=" if ( $cmp eq "==" );
 
-                     $san_comp .= " " . $cmp . " " . $ver;
+                     $san_comp .= " " . $cmp . " " . $ver . "$tag";
                   }
                }
             }
@@ -545,10 +555,10 @@ sub Build()
                   $line =~ s/[@][@]PKG_OS_TAG[@][@]/$ostag/g;
                   $line =~ s/[@][@]PKG_VERSION[@][@]/$CFG{PKG_VERSION}/g;
                   $line =~ s/[@][@]PKG_SUMMARY[@][@]/$CFG{PKG_SUMMARY}/g;
-                  $line =~ s/[@][@]PKG_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_DEPENDS_LIST})]}/g;
-                  $line =~ s/[@][@]PKG_PRE_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PRE_DEPENDS_LIST})]}/g;
-                  $line =~ s/[@][@]PKG_PROVIDES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES_LIST})]}/g;
-                  $line =~ s/[@][@]PKG_OBSOLETES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_OBSOLETES_LIST})]}/g;
+                  $line =~ s/[@][@]PKG_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_DEPENDS_LIST},0)]}/g;
+                  $line =~ s/[@][@]PKG_PRE_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PRE_DEPENDS_LIST},0)]}/g;
+                  $line =~ s/[@][@]PKG_PROVIDES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES_LIST},0)]}/g;
+                  $line =~ s/[@][@]PKG_OBSOLETES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_OBSOLETES_LIST},0)]}/g;
 
                   if ( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:](\s*,*\s*)*$/ )    # drop lines with empty headers
                   {
@@ -615,14 +625,18 @@ sub Build()
 
 sub SelfTest()
 {
+   my $ostag = GetOsTag();
+
    if ( GetPkgFormat() eq "DEB" )
    {
-      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ] ), "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1), ghi (= 7.0), jkl, aaa | bbb | perl(Carp) (>= 3.2)" );
+      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ], 0 ), "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1.$ostag), ghi (= 7.0), jkl, aaa | bbb | perl(Carp) (>= 3.2)" );
+      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ], 1 ), "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1), ghi (= 7.0), jkl, aaa | bbb | perl(Carp) (>= 3.2)" );
    }
 
    if ( GetPkgFormat() eq "RPM" )
    {
-      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ] ), "abc-3.4 >= 4.4, def-6.7 > 6.6-1, ghi = 7.0, jkl, aaa or bbb or perl(Carp) >= 3.2" );
+      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ], 0 ), "abc-3.4 >= 4.4, def-6.7 > 6.6-1.$ostag, ghi = 7.0, jkl, aaa or bbb or perl(Carp) >= 3.2" );
+      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ], 1 ), "abc-3.4 >= 4.4, def-6.7 > 6.6-1, ghi = 7.0, jkl, aaa or bbb or perl(Carp) >= 3.2" );
    }
 }
 
