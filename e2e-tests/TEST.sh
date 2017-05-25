@@ -49,6 +49,59 @@ assert()
    (( ++COUNT ))
 }
 
+assert_870()
+{
+   local STR="$1"; shift;
+   assert "$STR:870" /opt/rr/bin/abc.sh <<EOM
+abc-bin-ver: abc-bin-1
+abc-lib-ver: abc-lib-1
+EOM
+}
+
+assert_871()
+{
+   local STR="$1"; shift;
+   assert "$STR:871" /opt/rr/bin/abc.sh <<EOM
+abc-bin-ver: abc-bin-2
+abc-lib-ver: abc-lib-1
+EOM
+}
+
+assert_872()
+{
+   local STR="$1"; shift;
+   assert "$STR:872" /opt/rr/bin/abc.sh <<EOM
+abc-bin-ver: abc-bin-2
+abc-lib-ver: abc-lib-3
+EOM
+}
+
+assert_900()
+{
+   local STR="$1"; shift;
+   assert "$STR:900" /opt/rr/bin/abc.sh <<EOM
+my-abc-bin-ver: my-abc-bin-1
+my-abc-lib-ver: my-abc-lib-1
+EOM
+}
+
+assert_901()
+{
+   local STR="$1"; shift;
+   assert "$STR:901" /opt/rr/bin/abc.sh <<EOM
+my-abc-bin-ver: my-abc-bin-2
+my-abc-lib-ver: my-abc-lib-1
+EOM
+}
+
+assert_EMPTY()
+{
+   local STR="$1"; shift;
+   assert "$STR:EMPTY" pkg_isEmpty <<EOM
+EMPTY
+EOM
+}
+
 pkg_add_repo()
 {
    if [ -f /etc/redhat-release ]
@@ -112,7 +165,7 @@ pkg_install_latest()
 
    if [ -f /etc/redhat-release ]
    then
-      yum -y install --disablerepo=* --enablerepo=local-D1 "$pkg"
+      yum -y install --disablerepo=* --enablerepo=local* "$pkg"
    else
       apt-get install -y --allow-unauthenticated "$pkg"
    fi
@@ -125,7 +178,7 @@ pkg_install_specified()
 
    if [ -f /etc/redhat-release ]
    then
-      yum -y install --disablerepo=* --enablerepo=local-D1 "$pkg-$ver"
+      yum -y install --disablerepo=* --enablerepo=local* "$pkg-$ver"
    else
       DEPS=$(apt-get install -y --allow-unauthenticated "$pkg=$ver-*" | grep -o -e 'Depends:.*)' | sed -e 's/Depends: //' -e 's/[( )]//g')
       if [ "$DEPS" ]
@@ -142,10 +195,10 @@ pkg_downgrade()
 
    if [ -f /etc/redhat-release ]
    then
-      DEPS=$(yum -y downgrade --disablerepo=* --enablerepo=local-D1 "$pkg-$ver-*" 2>&1 | grep 'Requires:' | sed -e 's/.*Requires: //' -e 's/ //g' -e 's/[<>][=]/-/' -e 's/[=]/-/')
+      DEPS=$(yum -y downgrade --disablerepo=* --enablerepo=local* "$pkg-$ver-*" 2>&1 | grep 'Requires:' | sed -e 's/.*Requires: //' -e 's/ //g' -e 's/[<>][=]/-/' -e 's/[=]/-/')
       if [ "$DEPS" ]
       then
-         yum -y downgrade --disablerepo=* --enablerepo=local-D1 "$pkg-$ver-*" $DEPS
+         yum -y downgrade --disablerepo=* --enablerepo=local* "$pkg-$ver-*" $DEPS
       fi
    else
       DEPS=$(apt-get install -y --allow-unauthenticated --allow-downgrades "$pkg=$ver-*" | grep -o -e 'Depends:.*)' | sed -e 's/Depends: //' -e 's/[( )]//g')
@@ -166,9 +219,7 @@ ECHO_TEST "REPO=EMPTY INIT=EMPTY"
 pkg_add_repo
 pkg_repo_metaupdate
 
-assert "AFTER:EMPTY" pkg_isEmpty <<EOM
-EMPTY
-EOM
+assert_EMPTY "INIT"
 
 ############################################################
 ECHO_TEST "REPO=870 INSTALL=870"
@@ -177,16 +228,11 @@ ECHO_TEST "REPO=870 INSTALL=870"
 ./publish-repo.sh
 pkg_repo_metaupdate
 
-assert "BEFORE:EMPTY" pkg_isEmpty <<EOM
-EMPTY
-EOM
+assert_EMPTY "BEFORE"
 
 pkg_install_latest zmb1-abc-svc
 
-assert "AFTER:870" /opt/rr/bin/abc.sh <<EOM
-bin-ver: bin-1
-lib-ver: lib-1
-EOM
+assert_870 AFTER
 
 ############################################################
 ECHO_TEST "REPO=870,871 UPGRADE=870->871"
@@ -195,64 +241,42 @@ ECHO_TEST "REPO=870,871 UPGRADE=870->871"
 ./publish-repo.sh
 pkg_repo_metaupdate
 
-assert "BEFORE:870" /opt/rr/bin/abc.sh <<EOM
-bin-ver: bin-1
-lib-ver: lib-1
-EOM
+assert_870 BEFORE
 
 pkg_install_latest zmb1-abc-svc
 
-assert "AFTER:871" /opt/rr/bin/abc.sh <<EOM
-bin-ver: bin-2
-lib-ver: lib-1
-EOM
+assert_871 AFTER
 
 ############################################################
 ECHO_TEST "REPO=870,871 INSTALL=871"
 
 pkg_clean
 
-assert "BEFORE:EMPTY" pkg_isEmpty <<EOM
-EMPTY
-EOM
+assert_EMPTY "BEFORE"
 
 pkg_install_latest zmb1-abc-svc
 
-assert "AFTER:871" /opt/rr/bin/abc.sh <<EOM
-bin-ver: bin-2
-lib-ver: lib-1
-EOM
+assert_871 AFTER
 
 ############################################################
 ECHO_TEST "REPO=870,871 DOWNGRADE=871->870"
 
-assert "BEFORE:871" /opt/rr/bin/abc.sh <<EOM
-bin-ver: bin-2
-lib-ver: lib-1
-EOM
+assert_871 BEFORE
 
 pkg_downgrade zmb1-abc-svc '8.7.0'
 
-assert "AFTER:870" /opt/rr/bin/abc.sh <<EOM
-bin-ver: bin-1
-lib-ver: lib-1
-EOM
+assert_870 AFTER
 
 ############################################################
 ECHO_TEST "REPO=870,871 INSTALL=870"
 
 pkg_clean
 
-assert "BEFORE:EMPTY" pkg_isEmpty <<EOM
-EMPTY
-EOM
+assert_EMPTY "BEFORE"
 
 pkg_install_specified zmb1-abc-svc '8.7.0'
 
-assert "AFTER:870" /opt/rr/bin/abc.sh <<EOM
-bin-ver: bin-1
-lib-ver: lib-1
-EOM
+assert_870 AFTER
 
 ############################################################
 ECHO_TEST "REPO=870,871,872 UPGRADE=870->872"
@@ -261,18 +285,54 @@ ECHO_TEST "REPO=870,871,872 UPGRADE=870->872"
 ./publish-repo.sh
 pkg_repo_metaupdate
 
-assert "BEFORE:870" /opt/rr/bin/abc.sh <<EOM
-bin-ver: bin-1
-lib-ver: lib-1
-EOM
+assert_870 BEFORE
 
 pkg_install_latest zmb1-abc-svc
 
-assert "AFTER:872" /opt/rr/bin/abc.sh <<EOM
-bin-ver: bin-2
-lib-ver: lib-3
-EOM
+assert_872 AFTER
 
 ############################################################
+ECHO_TEST "REPO=870,871,872,900 UPGRADE=872->872"
+
+./rel900.sh
+./publish-repo.sh
+pkg_repo_metaupdate
+
+assert_872 BEFORE
+
+pkg_install_latest zmb1-abc-svc
+
+assert_872 AFTER
+
+############################################################
+ECHO_TEST "REPO=870,871,872,900 UPGRADE=872->900"
+
+assert_872 BEFORE
+
+pkg_install_latest zmb2-abc-svc
+
+assert_900 AFTER
+
+############################################################
+ECHO_TEST "REPO=870,871,872,900,901 UPGRADE=900->901"
+
+./rel901.sh
+./publish-repo.sh
+pkg_repo_metaupdate
+
+assert_900 BEFORE
+
+pkg_install_latest zmb2-abc-svc
+
+assert_901 AFTER
+
+############################################################
+ECHO_TEST "REPO=870,871,872,900,901 DOWNGRADE=901->871"
+
+assert_901 BEFORE
+
+pkg_downgrade zmb1-abc-svc '8.7.1'
+
+assert_871 AFTER
 
 echo "########################################## END #####################################" >&9
