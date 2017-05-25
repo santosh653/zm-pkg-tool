@@ -52,52 +52,72 @@ assert()
 assert_870()
 {
    local STR="$1"; shift;
-   assert "$STR:870" /opt/rr/bin/abc.sh <<EOM
+   assert "$STR:CHK1:870" /opt/rr/bin/abc.sh <<EOM
 abc-bin-ver: abc-bin-1
 abc-lib-ver: abc-lib-1
+EOM
+
+   assert "$STR:CHK2:870" /opt/rr/bin/abc-svc.sh <<EOM
+abc-svc-ver: abc-svc-1
 EOM
 }
 
 assert_871()
 {
    local STR="$1"; shift;
-   assert "$STR:871" /opt/rr/bin/abc.sh <<EOM
+   assert "$STR:CHK1:871" /opt/rr/bin/abc.sh <<EOM
 abc-bin-ver: abc-bin-2
 abc-lib-ver: abc-lib-1
+EOM
+
+   assert "$STR:CHK2:871" /opt/rr/bin/abc-svc.sh <<EOM
+abc-svc-ver: abc-svc-2
 EOM
 }
 
 assert_872()
 {
    local STR="$1"; shift;
-   assert "$STR:872" /opt/rr/bin/abc.sh <<EOM
+   assert "$STR:CHK1:872" /opt/rr/bin/abc.sh <<EOM
 abc-bin-ver: abc-bin-2
 abc-lib-ver: abc-lib-3
+EOM
+
+   assert "$STR:CHK2:872" /opt/rr/bin/abc-svc.sh <<EOM
+abc-svc-ver: abc-svc-3
 EOM
 }
 
 assert_900()
 {
    local STR="$1"; shift;
-   assert "$STR:900" /opt/rr/bin/abc.sh <<EOM
+   assert "$STR:CHK1:900" /opt/rr/bin/abc.sh <<EOM
 my-abc-bin-ver: my-abc-bin-1
 my-abc-lib-ver: my-abc-lib-1
+EOM
+
+   assert "$STR:CHK2:900" /opt/rr/bin/abc-svc.sh <<EOM
+my-abc-svc-ver: my-abc-svc-1
 EOM
 }
 
 assert_901()
 {
    local STR="$1"; shift;
-   assert "$STR:901" /opt/rr/bin/abc.sh <<EOM
+   assert "$STR:CHK1:901" /opt/rr/bin/abc.sh <<EOM
 my-abc-bin-ver: my-abc-bin-2
 my-abc-lib-ver: my-abc-lib-1
+EOM
+
+   assert "$STR:CHK2:901" /opt/rr/bin/abc-svc.sh <<EOM
+my-abc-svc-ver: my-abc-svc-2
 EOM
 }
 
 assert_EMPTY()
 {
    local STR="$1"; shift;
-   assert "$STR:EMPTY" pkg_isEmpty <<EOM
+   assert "$STR:CHK:EMPTY" pkg_isEmpty <<EOM
 EMPTY
 EOM
 }

@@ -35,9 +35,15 @@ EOM
    mv build/dist/*/* /tmp/local-repo/zmb-store/D2/
 
    # zmb2-abc-svc
-   mkdir -p build/stage/zmb2-abc-svc/
+   mkdir -p build/stage/zmb2-abc-svc/opt/rr/bin
 
-   ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-name=zmb2-abc-svc --pkg-summary='its zmb-abc-svc' \
+   cat > build/stage/zmb2-abc-svc/opt/rr/bin/abc-svc.sh <<EOM
+echo "my-abc-svc-ver: my-abc-svc-2"
+EOM
+
+   chmod +x build/stage/zmb2-abc-svc/opt/rr/bin/abc-svc.sh
+
+   ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb2-abc-svc --pkg-summary='its zmb-abc-svc' \
       --pkg-version=$PKG_SVC_VER --pkg-release=$PKG_SVC_REV \
       "${SVC_DEP[@]}" \
       --pkg-obsoletes-list='zmb1-abc-svc'
