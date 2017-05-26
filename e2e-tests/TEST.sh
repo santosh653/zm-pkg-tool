@@ -12,6 +12,7 @@ echo "See /tmp/pkg-test.log for details"
 
 exec 9>&1
 exec 1>/tmp/pkg-test.log 2>&1
+set -x
 
 CNT=1
 
@@ -36,14 +37,13 @@ assert()
       exit 1
    fi
 
-   diff -w <("$@" | sort) <(cat - | sort)
-   if [ $? -ne 0 ]
+   if diff -w <("$@" | sort) <(cat - | sort)
    then
+      echo " - PASS: $STR" >&9
+   else
       echo " - FAIL: $STR" >&9
       echo "####################################################################################" >&9
       exit 1
-   else
-      echo " - PASS: $STR" >&9
    fi
 
    (( ++COUNT ))
@@ -124,29 +124,34 @@ EOM
 
 pkg_add_repo()
 {
+   local R_arg=( "$@" );
+
    if [ -f /etc/redhat-release ]
    then
-      cat > /etc/yum.repos.d/local.repo <<EOM
-[local-D1]
-name=Local Repository Demo
-baseurl=file:///tmp/local-repo/zmb-store/D1/
-enabled=0
-gpgcheck=0
-protect=1
-
-[local-D2]
-name=Local Repository Demo
-baseurl=file:///tmp/local-repo/zmb-store/D2/
-enabled=0
-gpgcheck=0
-protect=1
-EOM
+      > /etc/yum.repos.d/local.repo
    else
-      cat > /etc/apt/sources.list.d/local.list <<EOM
-deb file:///tmp/local-repo zmb-store/D1/
-deb file:///tmp/local-repo zmb-store/D2/
-EOM
+      > /etc/apt/sources.list.d/local.list
    fi
+
+   local R;
+   for R in "${R_arg[@]}"
+   do
+      if [ -f /etc/redhat-release ]
+      then
+         cat >> /etc/yum.repos.d/local.repo <<EOM
+[local-$R]
+name=Local Repository Demo
+baseurl=file:///tmp/local-repo/zmb-store/$R/
+enabled=0
+gpgcheck=0
+protect=1
+EOM
+      else
+         cat >> /etc/apt/sources.list.d/local.list <<EOM
+deb file:///tmp/local-repo zmb-store/$R/
+EOM
+      fi
+   done
 }
 
 pkg_isEmpty()
@@ -230,19 +235,19 @@ pkg_downgrade()
 }
 
 ############################################################
-ECHO_TEST "REPO=EMPTY INIT=EMPTY"
+ECHO_TEST "REPO.D1=EMPTY ENABLED=[D1] INIT=EMPTY"
 
 (set +e; pkg_clean; exit 0)
 
 ./init.sh
 ./publish-repo.sh
-pkg_add_repo
+pkg_add_repo D1
 pkg_repo_metaupdate
 
 assert_EMPTY "INIT"
 
 ############################################################
-ECHO_TEST "REPO=870 INSTALL=870"
+ECHO_TEST "REPO.D1=870 ENABLED=[D1] INSTALL=870"
 
 ./rel870.sh
 ./publish-repo.sh
@@ -255,7 +260,7 @@ pkg_install_latest zmb1-abc-svc
 assert_870 AFTER
 
 ############################################################
-ECHO_TEST "REPO=870,871 UPGRADE=870->871"
+ECHO_TEST "REPO.D1=870,871 ENABLED=[D1] UPGRADE=870->871"
 
 ./rel871.sh
 ./publish-repo.sh
@@ -268,7 +273,7 @@ pkg_install_latest zmb1-abc-svc
 assert_871 AFTER
 
 ############################################################
-ECHO_TEST "REPO=870,871 INSTALL=871"
+ECHO_TEST "REPO.D1=870,871 ENABLED=[D1] INSTALL=871"
 
 pkg_clean
 
@@ -279,7 +284,7 @@ pkg_install_latest zmb1-abc-svc
 assert_871 AFTER
 
 ############################################################
-ECHO_TEST "REPO=870,871 DOWNGRADE=871->870"
+ECHO_TEST "REPO.D1=870,871 ENABLED=[D1] DOWNGRADE=871->870"
 
 assert_871 BEFORE
 
@@ -288,7 +293,7 @@ pkg_downgrade zmb1-abc-svc '8.7.0'
 assert_870 AFTER
 
 ############################################################
-ECHO_TEST "REPO=870,871 INSTALL=870"
+ECHO_TEST "REPO.D1=870,871 ENABLED=[D1] INSTALL=870"
 
 pkg_clean
 
@@ -299,7 +304,7 @@ pkg_install_specified zmb1-abc-svc '8.7.0'
 assert_870 AFTER
 
 ############################################################
-ECHO_TEST "REPO=870,871,872 UPGRADE=870->872"
+ECHO_TEST "REPO.D1=870,871,872 ENABLED=[D1] UPGRADE=870->872"
 
 ./rel872.sh
 ./publish-repo.sh
@@ -312,7 +317,7 @@ pkg_install_latest zmb1-abc-svc
 assert_872 AFTER
 
 ############################################################
-ECHO_TEST "REPO=870,871,872,900 UPGRADE=872->872"
+ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900 ENABLED=[D1] UPGRADE=872->872"
 
 ./rel900.sh
 ./publish-repo.sh
@@ -325,7 +330,10 @@ pkg_install_latest zmb1-abc-svc
 assert_872 AFTER
 
 ############################################################
-ECHO_TEST "REPO=870,871,872,900 UPGRADE=872->900"
+ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900 ENABLED=[D1,D2] UPGRADE=872->900"
+
+pkg_add_repo D1 D2
+pkg_repo_metaupdate
 
 assert_872 BEFORE
 
@@ -334,7 +342,7 @@ pkg_install_latest zmb2-abc-svc
 assert_900 AFTER
 
 ############################################################
-ECHO_TEST "REPO=870,871,872,900,901 UPGRADE=900->901"
+ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900,901 ENABLED=[D1,D2] UPGRADE=900->901"
 
 ./rel901.sh
 ./publish-repo.sh
@@ -347,11 +355,15 @@ pkg_install_latest zmb2-abc-svc
 assert_901 AFTER
 
 ############################################################
-ECHO_TEST "REPO=870,871,872,900,901 DOWNGRADE=901->871"
+ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900,901 ENABLED=[D1] DOWNGRADE=901->871"
+
+pkg_add_repo D1
+pkg_repo_metaupdate
 
 assert_901 BEFORE
 
-pkg_downgrade zmb1-abc-svc '8.7.1'
+pkg_clean
+pkg_install_specified zmb1-abc-svc '8.7.1'
 
 assert_871 AFTER
 
