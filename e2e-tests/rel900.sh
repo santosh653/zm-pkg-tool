@@ -9,20 +9,18 @@ deploy()
    PKG_ABC_BIN_VER=1.0.0+1493729097; PKG_ABC_BIN_REV=1;
 
    SVC_DEP=()
-   SVC_DEP+=( "--pkg-depends-list=zmb2-abc-lib (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
+   SVC_DEP+=( "--pkg-depends-list=zmb2-abc-libs (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
    SVC_DEP+=( "--pkg-depends-list=zmb2-abc-bin (= $PKG_ABC_BIN_VER-$PKG_ABC_BIN_REV)" );
 
-   # zmb2-abc-lib
-   mkdir -p build/stage/zmb2-abc-lib/opt/rr/lib
+   # zmb2-abc-libs
+   mkdir -p build/stage/zmb2-abc-libs/opt/rr/lib
 
-   cat > build/stage/zmb2-abc-lib/opt/rr/lib/my-abc-lib.sh <<EOM
+   cat > build/stage/zmb2-abc-libs/opt/rr/lib/my-abc-lib.sh <<EOM
 MY_ABC_LIB_VER="my-abc-lib-1"
 EOM
 
-   ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb2-abc-lib --pkg-summary='its zmb-abc-lib' \
-      --pkg-version=$PKG_ABC_LIB_VER --pkg-release=$PKG_ABC_LIB_REV \
-      --pkg-depends-list='zmb2-abc-svc' \
-      --pkg-obsoletes-list='zmb1-abc-lib'
+   ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb2-abc-libs --pkg-summary='its zmb-abc-libs' \
+      --pkg-version=$PKG_ABC_LIB_VER --pkg-release=$PKG_ABC_LIB_REV
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D2/
 
@@ -40,9 +38,7 @@ EOM
 
    ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb2-abc-bin --pkg-summary='its zmb-abc-bin' \
       --pkg-version=$PKG_ABC_BIN_VER --pkg-release=$PKG_ABC_BIN_REV \
-      --pkg-depends-list='zmb2-abc-lib' \
-      --pkg-depends-list='zmb2-abc-svc' \
-      --pkg-obsoletes-list='zmb1-abc-bin'
+      --pkg-depends-list='zmb2-abc-libs'
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D2/
 
@@ -58,7 +54,11 @@ EOM
    ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb2-abc-svc --pkg-summary='its zmb-abc-svc' \
       --pkg-version=$PKG_SVC_VER --pkg-release=$PKG_SVC_REV \
       "${SVC_DEP[@]}" \
-      --pkg-obsoletes-list='zmb1-abc-svc'
+      --pkg-obsoletes-list='zmb1-abc-svc' \
+      --pkg-obsoletes-list='zmb1-abc-bin' \
+      --pkg-obsoletes-list='zmb1-abc-lib' \
+      --pkg-obsoletes-list='zmb1-cmn-lib' \
+      --pkg-obsoletes-list='zmb1-abc-libs'
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D2/
 

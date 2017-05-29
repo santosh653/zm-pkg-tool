@@ -52,12 +52,15 @@ assert()
 assert_870()
 {
    local STR="$1"; shift;
-   assert "$STR:CHK1:870" /opt/rr/bin/abc.sh <<EOM
+   local VER="${FUNCNAME[0]/?*_/}";
+
+   assert "$STR:CHK1:$VER" /opt/rr/bin/abc.sh <<EOM
 abc-bin-ver: abc-bin-1
 abc-lib-ver: abc-lib-1
+cmn-lib-ver: cmn-lib-1
 EOM
 
-   assert "$STR:CHK2:870" /opt/rr/bin/abc-svc.sh <<EOM
+   assert "$STR:CHK2:$VER" /opt/rr/bin/abc-svc.sh <<EOM
 abc-svc-ver: abc-svc-1
 EOM
 }
@@ -65,12 +68,15 @@ EOM
 assert_871()
 {
    local STR="$1"; shift;
-   assert "$STR:CHK1:871" /opt/rr/bin/abc.sh <<EOM
+   local VER="${FUNCNAME[0]/?*_/}";
+
+   assert "$STR:CHK1:$VER" /opt/rr/bin/abc.sh <<EOM
 abc-bin-ver: abc-bin-2
 abc-lib-ver: abc-lib-1
+cmn-lib-ver: cmn-lib-1
 EOM
 
-   assert "$STR:CHK2:871" /opt/rr/bin/abc-svc.sh <<EOM
+   assert "$STR:CHK2:$VER" /opt/rr/bin/abc-svc.sh <<EOM
 abc-svc-ver: abc-svc-2
 EOM
 }
@@ -78,25 +84,46 @@ EOM
 assert_872()
 {
    local STR="$1"; shift;
-   assert "$STR:CHK1:872" /opt/rr/bin/abc.sh <<EOM
+   local VER="${FUNCNAME[0]/?*_/}";
+
+   assert "$STR:CHK1:$VER" /opt/rr/bin/abc.sh <<EOM
 abc-bin-ver: abc-bin-2
-abc-lib-ver: abc-lib-3
+abc-lib-ver: abc-lib-2
+cmn-lib-ver: cmn-lib-2
 EOM
 
-   assert "$STR:CHK2:872" /opt/rr/bin/abc-svc.sh <<EOM
+   assert "$STR:CHK2:$VER" /opt/rr/bin/abc-svc.sh <<EOM
 abc-svc-ver: abc-svc-3
+EOM
+}
+
+assert_873()
+{
+   local STR="$1"; shift;
+   local VER="${FUNCNAME[0]/?*_/}";
+
+   assert "$STR:CHK1:$VER" /opt/rr/bin/abc.sh <<EOM
+abc-bin-ver: abc-bin-3
+abc-lib-ver: abc-lib-3
+cmn-lib-ver: cmn-lib-3
+EOM
+
+   assert "$STR:CHK2:$VER" /opt/rr/bin/abc-svc.sh <<EOM
+abc-svc-ver: abc-svc-4
 EOM
 }
 
 assert_900()
 {
    local STR="$1"; shift;
-   assert "$STR:CHK1:900" /opt/rr/bin/abc.sh <<EOM
+   local VER="${FUNCNAME[0]/?*_/}";
+
+   assert "$STR:CHK1:$VER" /opt/rr/bin/abc.sh <<EOM
 my-abc-bin-ver: my-abc-bin-1
 my-abc-lib-ver: my-abc-lib-1
 EOM
 
-   assert "$STR:CHK2:900" /opt/rr/bin/abc-svc.sh <<EOM
+   assert "$STR:CHK2:$VER" /opt/rr/bin/abc-svc.sh <<EOM
 my-abc-svc-ver: my-abc-svc-1
 EOM
 }
@@ -104,12 +131,14 @@ EOM
 assert_901()
 {
    local STR="$1"; shift;
-   assert "$STR:CHK1:901" /opt/rr/bin/abc.sh <<EOM
+   local VER="${FUNCNAME[0]/?*_/}";
+
+   assert "$STR:CHK1:$VER" /opt/rr/bin/abc.sh <<EOM
 my-abc-bin-ver: my-abc-bin-2
 my-abc-lib-ver: my-abc-lib-1
 EOM
 
-   assert "$STR:CHK2:901" /opt/rr/bin/abc-svc.sh <<EOM
+   assert "$STR:CHK2:$VER" /opt/rr/bin/abc-svc.sh <<EOM
 my-abc-svc-ver: my-abc-svc-2
 EOM
 }
@@ -117,7 +146,9 @@ EOM
 assert_EMPTY()
 {
    local STR="$1"; shift;
-   assert "$STR:CHK:EMPTY" pkg_isEmpty <<EOM
+   local VER="${FUNCNAME[0]/?*_/}";
+
+   assert "$STR:CHK:$VER" pkg_isEmpty <<EOM
 EMPTY
 EOM
 }
@@ -203,7 +234,11 @@ pkg_install_specified()
 
    if [ -f /etc/redhat-release ]
    then
-      yum -y install --disablerepo=* --enablerepo=local* "$pkg-$ver"
+      DEPS=$(yum -y install --disablerepo=* --enablerepo=local* "$pkg-$ver-*" 2>&1 | grep 'Requires:' | sed -e 's/.*Requires: //' -e 's/ //g' -e 's/[<>][=]/-/' -e 's/[=]/-/')
+      if [ "$DEPS" ]
+      then
+         yum -y install --disablerepo=* --enablerepo=local* "$pkg-$ver" $DEPS
+      fi
    else
       DEPS=$(apt-get install -y --allow-unauthenticated "$pkg=$ver-*" | grep -o -e 'Depends:.*)' | sed -e 's/Depends: //' -e 's/[( )]//g')
       if [ "$DEPS" ]
@@ -293,7 +328,7 @@ pkg_downgrade zmb1-abc-svc '8.7.0'
 assert_870 AFTER
 
 ############################################################
-ECHO_TEST "REPO.D1=870,871 ENABLED=[D1] INSTALL=870"
+ECHO_TEST "REPO.D1=870,871 ENABLED=[D1] INSTALL_OLD=870"
 
 pkg_clean
 
@@ -317,9 +352,20 @@ pkg_install_latest zmb1-abc-svc
 assert_872 AFTER
 
 ############################################################
-ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900 ENABLED=[D1] UPGRADE=872->872"
+ECHO_TEST "REPO.D1=870,871,872 ENABLED=[D1] INSTALL=872"
 
-./rel900.sh
+pkg_clean
+
+assert_EMPTY "BEFORE"
+
+pkg_install_latest zmb1-abc-svc
+
+assert_872 AFTER
+
+############################################################
+ECHO_TEST "REPO.D1=870,871,872,873 ENABLED=[D1] UPGRADE=872->873"
+
+./rel873.sh
 ./publish-repo.sh
 pkg_repo_metaupdate
 
@@ -327,22 +373,46 @@ assert_872 BEFORE
 
 pkg_install_latest zmb1-abc-svc
 
-assert_872 AFTER
+assert_873 AFTER
 
 ############################################################
-ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900 ENABLED=[D1,D2] UPGRADE=872->900"
+ECHO_TEST "REPO.D1=870,871,872,873 ENABLED=[D1] INSTALL=873"
+
+pkg_clean
+
+assert_EMPTY "BEFORE"
+
+pkg_install_latest zmb1-abc-svc
+
+assert_873 AFTER
+
+############################################################
+ECHO_TEST "REPO.D1=870,871,872,873 REPO.D2=900 ENABLED=[D1] UPGRADE=873->873"
+
+./rel900.sh
+./publish-repo.sh
+pkg_repo_metaupdate
+
+assert_873 BEFORE
+
+pkg_install_latest zmb1-abc-svc
+
+assert_873 AFTER
+
+############################################################
+ECHO_TEST "REPO.D1=870,871,872,873 REPO.D2=900 ENABLED=[D1,D2] UPGRADE=873->900"
 
 pkg_add_repo D1 D2
 pkg_repo_metaupdate
 
-assert_872 BEFORE
+assert_873 BEFORE
 
 pkg_install_latest zmb2-abc-svc
 
 assert_900 AFTER
 
 ############################################################
-ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900,901 ENABLED=[D1,D2] UPGRADE=900->901"
+ECHO_TEST "REPO.D1=870,871,872,873 REPO.D2=900,901 ENABLED=[D1,D2] UPGRADE=900->901"
 
 ./rel901.sh
 ./publish-repo.sh
@@ -355,7 +425,7 @@ pkg_install_latest zmb2-abc-svc
 assert_901 AFTER
 
 ############################################################
-ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900,901 ENABLED=[D1] DOWNGRADE=901->871"
+ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900,901 ENABLED=[D1] ERASE,INSTALL=873"
 
 pkg_add_repo D1
 pkg_repo_metaupdate
@@ -363,8 +433,8 @@ pkg_repo_metaupdate
 assert_901 BEFORE
 
 pkg_clean
-pkg_install_specified zmb1-abc-svc '8.7.1'
+pkg_install_latest zmb1-abc-svc
 
-assert_871 AFTER
+assert_873 AFTER
 
 echo "########################################## END #####################################" >&9

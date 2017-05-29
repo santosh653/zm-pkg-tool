@@ -9,20 +9,22 @@ deploy()
    PKG_ABC_BIN_VER="1.0.0+1493729407"; PKG_ABC_BIN_REV="1";
 
    SVC_DEP=()
-   SVC_DEP+=( "--pkg-depends-list=zmb1-abc-lib (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
+   SVC_DEP+=( "--pkg-depends-list=zmb1-abc-libs (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
    SVC_DEP+=( "--pkg-depends-list=zmb1-abc-bin (= $PKG_ABC_BIN_VER-$PKG_ABC_BIN_REV)" );
 
-   # zmb1-abc-lib
-   mkdir -p build/stage/zmb1-abc-lib/opt/rr/lib
+   # zmb1-abc-libs
+   mkdir -p build/stage/zmb1-abc-libs/opt/rr/lib
 
-   cat > build/stage/zmb1-abc-lib/opt/rr/lib/abc-lib.sh <<EOM
-ABC_LIB_VER="abc-lib-3"
+   cat > build/stage/zmb1-abc-libs/opt/rr/lib/abc-lib.sh <<EOM
+ABC_LIB_VER="abc-lib-2"
 EOM
 
-   ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb1-abc-lib --pkg-summary='its zmb-abc-lib' \
-      --pkg-version=$PKG_ABC_LIB_VER --pkg-release=$PKG_ABC_LIB_REV \
-      --pkg-depends-list='zmb1-abc-svc' \
-      --pkg-obsoletes-list='zmb0-abc-lib'
+   cat > build/stage/zmb1-abc-libs/opt/rr/lib/cmn-lib.sh <<EOM
+CMN_LIB_VER="cmn-lib-2"
+EOM
+
+   ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb1-abc-libs --pkg-summary='its zmb-abc-libs' \
+      --pkg-version=$PKG_ABC_LIB_VER --pkg-release=$PKG_ABC_LIB_REV
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D1/
 
@@ -39,8 +41,7 @@ EOM
 
    ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb1-abc-svc --pkg-summary='its zmb-abc-svc' \
       --pkg-version=$PKG_SVC_VER --pkg-release=$PKG_SVC_REV \
-      "${SVC_DEP[@]}" \
-      --pkg-obsoletes-list='zmb0-abc-svc'
+      "${SVC_DEP[@]}"
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D1/
 
