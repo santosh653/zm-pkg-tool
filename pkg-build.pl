@@ -17,6 +17,7 @@ use Term::ANSIColor;
 my $GLOBAL_PATH_TO_SCRIPT_FILE;
 my $GLOBAL_PATH_TO_SCRIPT_DIR;
 my $GLOBAL_PATH_TO_TOP;
+my $CWD;
 
 my %CFG = ();
 
@@ -26,6 +27,7 @@ BEGIN
    $GLOBAL_PATH_TO_SCRIPT_FILE = Cwd::abs_path(__FILE__);
    $GLOBAL_PATH_TO_SCRIPT_DIR  = dirname($GLOBAL_PATH_TO_SCRIPT_FILE);
    $GLOBAL_PATH_TO_TOP         = dirname($GLOBAL_PATH_TO_SCRIPT_DIR);
+   $CWD                        = getcwd();
 }
 
 sub LoadConfiguration($)
@@ -508,7 +510,9 @@ sub Build()
 {
    my $ostag = GetOsTag();
 
-   System("rm -f '$CFG{OUT_DIST_DIR}/$ostag/$CFG{PKG_NAME}'_* '$CFG{OUT_DIST_DIR}/$ostag/$CFG{PKG_NAME}'-*.rpm");
+   System( "rm", "-f", $_ ) foreach glob("$CFG{OUT_DIST_DIR}/$ostag/$CFG{PKG_NAME}_*");
+   System( "rm", "-f", $_ ) foreach glob("$CFG{OUT_DIST_DIR}/$ostag/$CFG{PKG_NAME}-*.rpm");
+
    System( "rm",    "-rf", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
    System( "mkdir", "-p",  "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
    System( "mkdir", "-p",  "$CFG{OUT_DIST_DIR}/$ostag/" );
@@ -579,23 +583,26 @@ sub Build()
       "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}"
    );
 
-   System("make -f '$CFG{CFG_DIR}/$CFG{PKG_NAME}/Makefile' 'PKG_NAME=$CFG{PKG_NAME}' 'PKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}' stage")
+   System( "make", "-f", "$CFG{CFG_DIR}/$CFG{PKG_NAME}/Makefile", "PKG_NAME=$CFG{PKG_NAME}", "PKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}", "stage" )
      if ( -f "$CFG{CFG_DIR}/$CFG{PKG_NAME}/Makefile" );
 
-   System("ant -f '$CFG{CFG_DIR}/$CFG{PKG_NAME}/build.xml' '-DPKG_NAME=$CFG{PKG_NAME}' '-DPKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}' stage")
+   System( "ant", "-f", "$CFG{CFG_DIR}/$CFG{PKG_NAME}/build.xml", "-DPKG_NAME=$CFG{PKG_NAME}", "-DPKG_STAGE_DIR=$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}", "stage" )
      if ( -f "$CFG{CFG_DIR}/$CFG{PKG_NAME}/build.xml" );
 
    if ( $CFG{PKG_FORMAT} eq "rpm" )
    {
-      my $pkg_type_opts = "-ba";
-      $pkg_type_opts = "-bb" if ( $CFG{OUT_TYPE} eq "binary" );
-      $pkg_type_opts = "-bs" if ( $CFG{OUT_TYPE} eq "source" );
+      my @pkg_type_opts = ("-ba");
+      @pkg_type_opts = ("-bb") if ( $CFG{OUT_TYPE} eq "binary" );
+      @pkg_type_opts = ("-bs") if ( $CFG{OUT_TYPE} eq "source" );
 
-      my $CWD = getcwd();
+      System( "mv", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/rpm/1.spec", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/rpm/$CFG{PKG_NAME}.spec" );
+      System( "mkdir", "-p", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/" );
 
-      System("mkdir -p '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/'");
       System( "cp", "-a", $_, "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/@{[basename $_]}" ) foreach glob("$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}/*");
-      System("rpmbuild -v --define '_topdir $CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' '--buildroot=$CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/' $pkg_type_opts '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/rpm'/1.spec");
+
+      {
+         System( "rpmbuild", "-v", "--define", "_topdir $CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}", "--buildroot=$CWD/$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/BUILDROOT/", @pkg_type_opts, "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/rpm/$CFG{PKG_NAME}.spec" );
+      }
 
       print "\n\n";
       print "=========================================================================================================\n";
@@ -605,12 +612,17 @@ sub Build()
    }
    elsif ( $CFG{PKG_FORMAT} eq "deb" )
    {
-      my $pkg_type_opts = "-uc -us";
-      $pkg_type_opts .= " -b" if ( $CFG{OUT_TYPE} eq "binary" );
-      $pkg_type_opts .= " -S" if ( $CFG{OUT_TYPE} eq "source" );
+      my @pkg_type_opts = ( "-uc", "-us" );
+      push( @pkg_type_opts, "-b" ) if ( $CFG{OUT_TYPE} eq "binary" );
+      push( @pkg_type_opts, "-S" ) if ( $CFG{OUT_TYPE} eq "source" );
 
       System( "cp", "-a", $_, "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/@{[basename $_]}" ) foreach glob("$CFG{OUT_STAGE_DIR}/$CFG{PKG_NAME}/*");
-      System("cd '$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}' && dpkg-buildpackage $pkg_type_opts");
+
+      {
+         chdir("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}");
+         System( "dpkg-buildpackage", @pkg_type_opts );
+         chdir($CWD);
+      }
 
       print "\n\n";
       print "=========================================================================================================\n";
