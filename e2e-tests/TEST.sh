@@ -117,6 +117,22 @@ abc-svc-ver: abc-svc-4
 EOM
 }
 
+assert_874()
+{
+   local STR="$1"; shift;
+   local VER="${FUNCNAME[0]/?*_/}";
+
+   assert "$STR:CHK1:$VER" /opt/rr/bin/abc.sh <<EOM
+abc-bin-ver: abc-bin-3
+abc-lib-ver: abc-lib-4
+cmn-lib-ver: cmn-lib-3
+EOM
+
+   assert "$STR:CHK2:$VER" /opt/rr/bin/abc-svc.sh <<EOM
+abc-svc-ver: abc-svc-5
+EOM
+}
+
 assert_900()
 {
    local STR="$1"; shift;
@@ -391,9 +407,9 @@ pkg_install_latest zmb1-abc-svc
 assert_873 AFTER
 
 ############################################################
-ECHO_TEST "REPO.D1=870,871,872,873 REPO.D2=900 ENABLED=[D1] UPGRADE=873->873"
+ECHO_TEST "REPO.D1=870,871,872,873,874 ENABLED=[D1] UPGRADE=873->874"
 
-./rel900.sh
+./rel874.sh
 ./publish-repo.sh
 pkg_repo_metaupdate
 
@@ -401,22 +417,46 @@ assert_873 BEFORE
 
 pkg_install_latest zmb1-abc-svc
 
-assert_873 AFTER
+assert_874 AFTER
 
 ############################################################
-ECHO_TEST "REPO.D1=870,871,872,873 REPO.D2=900 ENABLED=[D1,D2] UPGRADE=873->900"
+ECHO_TEST "REPO.D1=870,871,872,873,874 ENABLED=[D1] INSTALL=874"
+
+pkg_clean
+
+assert_EMPTY "BEFORE"
+
+pkg_install_latest zmb1-abc-svc
+
+assert_874 AFTER
+
+############################################################
+ECHO_TEST "REPO.D1=870,871,872,873,874 REPO.D2=900 ENABLED=[D1] UPGRADE=874->874"
+
+./rel900.sh
+./publish-repo.sh
+pkg_repo_metaupdate
+
+assert_874 BEFORE
+
+pkg_install_latest zmb1-abc-svc
+
+assert_874 AFTER
+
+############################################################
+ECHO_TEST "REPO.D1=870,871,872,873,874 REPO.D2=900 ENABLED=[D1,D2] UPGRADE=874->900"
 
 pkg_add_repo D1 D2
 pkg_repo_metaupdate
 
-assert_873 BEFORE
+assert_874 BEFORE
 
 pkg_install_latest zmb2-abc-svc
 
 assert_900 AFTER
 
 ############################################################
-ECHO_TEST "REPO.D1=870,871,872,873 REPO.D2=900,901 ENABLED=[D1,D2] UPGRADE=900->901"
+ECHO_TEST "REPO.D1=870,871,872,873,874 REPO.D2=900,901 ENABLED=[D1,D2] UPGRADE=900->901"
 
 ./rel901.sh
 ./publish-repo.sh
@@ -429,7 +469,7 @@ pkg_install_latest zmb2-abc-svc
 assert_901 AFTER
 
 ############################################################
-ECHO_TEST "REPO.D1=870,871,872 REPO.D2=900,901 ENABLED=[D1] ERASE,INSTALL=873"
+ECHO_TEST "REPO.D1=870,871,872,873,874 REPO.D2=900,901 ENABLED=[D1] ERASE,INSTALL=874"
 
 pkg_add_repo D1
 pkg_repo_metaupdate
@@ -439,11 +479,12 @@ assert_901 BEFORE
 pkg_clean
 pkg_install_latest zmb1-abc-svc
 
-assert_873 AFTER
+assert_874 AFTER
 
 echo "########################################## END #####################################" >&9
-echo " - PASS: $S of $T" >&9
-echo " - FAIL: $F of $T" >&9
+echo " - PASS : $S" >&9
+echo " - FAIL : $F" >&9
+echo " - TOTAL: $T" >&9
 echo "########################################## END #####################################" >&9
 
 if [ "$F" == "0" ]
