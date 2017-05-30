@@ -14,4 +14,5 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, @@PKG_DEPENDS_LIST@@
 Pre-Depends: @@PKG_PRE_DEPENDS_LIST@@
 Provides: @@PKG_PROVIDES_LIST@@
 Conflicts: @@PKG_OBSOLETES_LIST@@
+Replaces: @@PKG_REPLACES_LIST@@
 Description: @@PKG_SUMMARY@@

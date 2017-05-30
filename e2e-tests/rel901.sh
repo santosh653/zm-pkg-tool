@@ -4,15 +4,17 @@ set -e
 
 deploy()
 {
+   rm -rf build
+
    PKG_SVC_VER=9.0.1; PKG_SVC_REV=1;
-   PKG_ABC_LIB_VER=1.0.0+1493729098; PKG_ABC_LIB_REV=1;
    PKG_ABC_BIN_VER=1.0.0+1493729587; PKG_ABC_BIN_REV=1;
+   PKG_ABC_LIB_VER=1.0.0+1493729098; PKG_ABC_LIB_REV=1;
 
    SVC_DEP=()
-   SVC_DEP+=( "--pkg-depends-list=zmb2-abc-libs (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
    SVC_DEP+=( "--pkg-depends-list=zmb2-abc-bin (= $PKG_ABC_BIN_VER-$PKG_ABC_BIN_REV)" );
+   SVC_DEP+=( "--pkg-depends-list=zmb2-abc-lib (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
 
-   # zmb2-abc-libs
+   # zmb2-abc-lib
 
    # zmb2-abc-bin
    mkdir -p build/stage/zmb2-abc-bin/opt/rr/bin
@@ -28,7 +30,7 @@ EOM
 
    ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb2-abc-bin --pkg-summary='its zmb-abc-bin' \
       --pkg-version=$PKG_ABC_BIN_VER --pkg-release=$PKG_ABC_BIN_REV \
-      --pkg-depends-list='zmb2-abc-libs'
+      --pkg-depends-list='zmb2-abc-lib'
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D2/
 
@@ -47,8 +49,7 @@ EOM
       --pkg-obsoletes-list='zmb1-abc-svc' \
       --pkg-obsoletes-list='zmb1-abc-bin' \
       --pkg-obsoletes-list='zmb1-abc-lib' \
-      --pkg-obsoletes-list='zmb1-cmn-lib' \
-      --pkg-obsoletes-list='zmb1-abc-libs'
+      --pkg-obsoletes-list='zmb1-cmn-lib'
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D2/
 

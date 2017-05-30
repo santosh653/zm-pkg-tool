@@ -26,6 +26,10 @@ ECHO_TEST()
    ((++CNT))
 }
 
+S=0
+T=0
+F=0
+
 assert()
 {
    local STR="$1"; shift;
@@ -40,13 +44,13 @@ assert()
    if diff -w <("$@" | sort) <(cat - | sort)
    then
       echo " - PASS: $STR" >&9
+      ((++S))
    else
       echo " - FAIL: $STR" >&9
-      echo "####################################################################################" >&9
-      exit 1
+      ((++F))
    fi
 
-   (( ++COUNT ))
+   ((++T))
 }
 
 assert_870()
@@ -438,3 +442,13 @@ pkg_install_latest zmb1-abc-svc
 assert_873 AFTER
 
 echo "########################################## END #####################################" >&9
+echo " - PASS: $S of $T" >&9
+echo " - FAIL: $F of $T" >&9
+echo "########################################## END #####################################" >&9
+
+if [ "$F" == "0" ]
+then
+   exit 0;
+else
+   exit 1;
+fi

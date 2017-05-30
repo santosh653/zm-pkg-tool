@@ -384,6 +384,13 @@ sub Init()
          default_sub  => sub { return []; },
       },
       {
+         name         => "PKG_REPLACES_LIST",
+         type         => "=s@",
+         hash_src     => \%cmd_hash,
+         validate_sub => undef,
+         default_sub  => sub { return []; },
+      },
+      {
          name         => "PKG_PRE_INSTALL_SCRIPT",
          type         => "=s",
          hash_src     => \%cmd_hash,
@@ -471,7 +478,6 @@ sub _SanitizePkgList($$)
                {
                   # add os_tag if $ver has release specified in it
                   my $tag = ( !$strip_os_tag && $ver =~ m/[-][^-]*$/ ) ? ".@{[GetOsTag()]}" : "";
-                  print "TAG=$tag\n";
 
                   if ( $CFG{PKG_FORMAT} eq "deb" )
                   {
@@ -563,6 +569,7 @@ sub Build()
                   $line =~ s/[@][@]PKG_PRE_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PRE_DEPENDS_LIST},0)]}/g;
                   $line =~ s/[@][@]PKG_PROVIDES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES_LIST},0)]}/g;
                   $line =~ s/[@][@]PKG_OBSOLETES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_OBSOLETES_LIST},0)]}/g;
+                  $line =~ s/[@][@]PKG_REPLACES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_REPLACES_LIST},0)]}/g;
 
                   if ( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:](\s*,*\s*)*$/ )    # drop lines with empty headers
                   {

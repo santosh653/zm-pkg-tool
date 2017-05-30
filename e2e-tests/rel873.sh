@@ -4,28 +4,17 @@ set -e
 
 deploy()
 {
+   rm -rf build
+
    PKG_SVC_VER="8.7.3"; PKG_SVC_REV="1";
-   PKG_ABC_LIB_VER="1.0.0+1493740110"; PKG_ABC_LIB_REV="1";
    PKG_ABC_BIN_VER="1.0.0+1493740105"; PKG_ABC_BIN_REV="1";
+   PKG_ABC_LIB_VER="1.0.0+1493740110"; PKG_ABC_LIB_REV="1";
    PKG_CMN_LIB_VER="1.0.0+1493740108"; PKG_CMN_LIB_REV="1";
 
    SVC_DEP=()
-   SVC_DEP+=( "--pkg-pre-depends-list=zmb1-abc-bin (= $PKG_ABC_BIN_VER-$PKG_ABC_BIN_REV)" );
-   SVC_DEP+=( "--pkg-pre-depends-list=zmb1-abc-lib (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
-   SVC_DEP+=( "--pkg-pre-depends-list=zmb1-cmn-lib (= $PKG_CMN_LIB_VER-$PKG_CMN_LIB_REV)" );
-
-   # zmb1-cmn-lib
-   mkdir -p build/stage/zmb1-cmn-lib/opt/rr/lib
-
-   cat > build/stage/zmb1-cmn-lib/opt/rr/lib/cmn-lib.sh <<EOM
-CMN_LIB_VER="cmn-lib-3"
-EOM
-
-   ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/lib/*' --pkg-name=zmb1-cmn-lib --pkg-summary='its zmb-cmn-lib (split)' \
-      --pkg-version=$PKG_CMN_LIB_VER --pkg-release=$PKG_CMN_LIB_REV \
-      --pkg-obsoletes-list='zmb1-abc-libs'
-
-   mv build/dist/*/* /tmp/local-repo/zmb-store/D1/
+   SVC_DEP+=( "--pkg-depends-list=zmb1-abc-bin (= $PKG_ABC_BIN_VER-$PKG_ABC_BIN_REV)" );
+   SVC_DEP+=( "--pkg-depends-list=zmb1-abc-lib (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
+   SVC_DEP+=( "--pkg-depends-list=zmb1-cmn-lib (= $PKG_CMN_LIB_VER-$PKG_CMN_LIB_REV)" );
 
    # zmb1-abc-lib
    mkdir -p build/stage/zmb1-abc-lib/opt/rr/lib
@@ -35,8 +24,20 @@ ABC_LIB_VER="abc-lib-3"
 EOM
 
    ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb1-abc-lib --pkg-summary='its zmb-abc-lib (split)' \
-      --pkg-version=$PKG_ABC_LIB_VER --pkg-release=$PKG_ABC_LIB_REV \
-      --pkg-obsoletes-list='zmb1-abc-libs'
+      --pkg-version=$PKG_ABC_LIB_VER --pkg-release=$PKG_ABC_LIB_REV
+
+   mv build/dist/*/* /tmp/local-repo/zmb-store/D1/
+
+   # zmb1-cmn-lib
+   mkdir -p build/stage/zmb1-cmn-lib/opt/rr/lib
+
+   cat > build/stage/zmb1-cmn-lib/opt/rr/lib/cmn-lib.sh <<EOM
+CMN_LIB_VER="cmn-lib-3"
+EOM
+
+   ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb1-cmn-lib --pkg-summary='its zmb-cmn-lib (split)' \
+      --pkg-version=$PKG_CMN_LIB_VER --pkg-release=$PKG_CMN_LIB_REV \
+      --pkg-replaces-list="zmb1-abc-lib (< $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)"
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D1/
 
@@ -56,7 +57,7 @@ EOM
 
    ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb1-abc-bin --pkg-summary='its zmb-abc-bin' \
       --pkg-version=$PKG_ABC_BIN_VER --pkg-release=$PKG_ABC_BIN_REV \
-      --pkg-depends-list='zmb1-abc-lib' \
+      --pkg-depends-list="zmb1-abc-lib" \
       --pkg-depends-list='zmb1-cmn-lib'
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D1/

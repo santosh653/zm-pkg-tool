@@ -4,15 +4,17 @@ set -e
 
 deploy()
 {
+   rm -rf build
+
    PKG_SVC_VER="8.7.1"; PKG_SVC_REV="1";
-   PKG_ABC_LIB_VER="1.0.0+1493728878"; PKG_ABC_LIB_REV="1";
    PKG_ABC_BIN_VER="1.0.0+1493729407"; PKG_ABC_BIN_REV="1";
+   PKG_ABC_LIB_VER="1.0.0+1493728878"; PKG_ABC_LIB_REV="1";
 
    SVC_DEP=()
-   SVC_DEP+=( "--pkg-depends-list=zmb1-abc-libs (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
    SVC_DEP+=( "--pkg-depends-list=zmb1-abc-bin (= $PKG_ABC_BIN_VER-$PKG_ABC_BIN_REV)" );
+   SVC_DEP+=( "--pkg-depends-list=zmb1-abc-lib (= $PKG_ABC_LIB_VER-$PKG_ABC_LIB_REV)" );
 
-   # zmb1-abc-libs
+   # zmb1-abc-lib
 
    # zmb1-abc-bin
    mkdir -p build/stage/zmb1-abc-bin/opt/rr/bin
@@ -30,8 +32,7 @@ EOM
 
    ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-install-list='/opt/rr/' --pkg-name=zmb1-abc-bin --pkg-summary='its zmb-abc-bin' \
       --pkg-version=$PKG_ABC_BIN_VER --pkg-release=$PKG_ABC_BIN_REV \
-      --pkg-depends-list='zmb1-abc-libs' \
-      --pkg-depends-list='zmb1-abc-svc'
+      --pkg-depends-list='zmb1-abc-lib'
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D1/
 
