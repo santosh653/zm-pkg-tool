@@ -349,42 +349,42 @@ sub Init()
          default_sub  => sub { return Die("@_ not specified"); },
       },
       {
-         name         => "PKG_INSTALL_LIST",
+         name         => "PKG_INSTALLS",
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
          default_sub  => sub { return []; },
       },
       {
-         name         => "PKG_DEPENDS_LIST",
+         name         => "PKG_DEPENDS",
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
          default_sub  => sub { return []; },
       },
       {
-         name         => "PKG_PRE_DEPENDS_LIST",
+         name         => "PKG_PRE_DEPENDS",
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
          default_sub  => sub { return []; },
       },
       {
-         name         => "PKG_PROVIDES_LIST",
+         name         => "PKG_PROVIDES",
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
          default_sub  => sub { return []; },
       },
       {
-         name         => "PKG_OBSOLETES_LIST",
+         name         => "PKG_OBSOLETES",
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
          default_sub  => sub { return []; },
       },
       {
-         name         => "PKG_REPLACES_LIST",
+         name         => "PKG_REPLACES",
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
@@ -439,10 +439,9 @@ sub Init()
 }
 
 
-sub _SanitizePkgList($$)
+sub _SanitizePkgList($)
 {
-   my $list         = shift;
-   my $strip_os_tag = shift;
+   my $list = shift;
 
    my $san_list = "";
    foreach my $entry ( @{$list} )
@@ -468,6 +467,9 @@ sub _SanitizePkgList($$)
             $pkn =~ s/[(]$//;
             $ver =~ s/[)]$//;
 
+            my $no_add_os_tag = 1
+              if ( $ver =~ s/[!]$// );
+
             my $san_comp = "";
 
             if ($pkn)
@@ -476,8 +478,7 @@ sub _SanitizePkgList($$)
 
                if ( $cmp && $ver )
                {
-                  # add os_tag if $ver has release specified in it
-                  my $tag = ( !$strip_os_tag && $ver =~ m/[-][^-]*$/ ) ? ".@{[GetOsTag()]}" : "";
+                  my $tag = ( !$no_add_os_tag && $ver =~ m/[-][^-]*$/ ) ? ".@{[GetOsTag()]}" : "";
 
                   if ( $CFG{PKG_FORMAT} eq "deb" )
                   {
@@ -554,10 +555,10 @@ sub Build()
                   {
                      my $pkg_install_list =
                        ( $CFG{PKG_FORMAT} eq "deb" && $tpl_file =~ /install[.]in/ )
-                       ? join( "\n", map { $_ =~ s,^/,,; $_ } @{ $CFG{PKG_INSTALL_LIST} } )
-                       : join( "\n", @{ $CFG{PKG_INSTALL_LIST} } );
+                       ? join( "\n", map { $_ =~ s,^/,,; $_ } @{ $CFG{PKG_INSTALLS} } )
+                       : join( "\n", @{ $CFG{PKG_INSTALLS} } );
 
-                     $line =~ s/[@][@]PKG_INSTALL_LIST[@][@]/$pkg_install_list/g;
+                     $line =~ s/[@][@]PKG_INSTALLS[@][@]/$pkg_install_list/g;
                   }
 
                   $line =~ s/[@][@]PKG_NAME[@][@]/$CFG{PKG_NAME}/g;
@@ -565,11 +566,11 @@ sub Build()
                   $line =~ s/[@][@]PKG_OS_TAG[@][@]/$ostag/g;
                   $line =~ s/[@][@]PKG_VERSION[@][@]/$CFG{PKG_VERSION}/g;
                   $line =~ s/[@][@]PKG_SUMMARY[@][@]/$CFG{PKG_SUMMARY}/g;
-                  $line =~ s/[@][@]PKG_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_DEPENDS_LIST},0)]}/g;
-                  $line =~ s/[@][@]PKG_PRE_DEPENDS_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PRE_DEPENDS_LIST},0)]}/g;
-                  $line =~ s/[@][@]PKG_PROVIDES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES_LIST},0)]}/g;
-                  $line =~ s/[@][@]PKG_OBSOLETES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_OBSOLETES_LIST},0)]}/g;
-                  $line =~ s/[@][@]PKG_REPLACES_LIST[@][@]/@{[_SanitizePkgList($CFG{PKG_REPLACES_LIST},0)]}/g;
+                  $line =~ s/[@][@]PKG_DEPENDS[@][@]/@{[_SanitizePkgList($CFG{PKG_DEPENDS})]}/g;
+                  $line =~ s/[@][@]PKG_PRE_DEPENDS[@][@]/@{[_SanitizePkgList($CFG{PKG_PRE_DEPENDS})]}/g;
+                  $line =~ s/[@][@]PKG_PROVIDES[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES})]}/g;
+                  $line =~ s/[@][@]PKG_OBSOLETES[@][@]/@{[_SanitizePkgList($CFG{PKG_OBSOLETES})]}/g;
+                  $line =~ s/[@][@]PKG_REPLACES[@][@]/@{[_SanitizePkgList($CFG{PKG_REPLACES})]}/g;
 
                   if ( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:](\s*,*\s*)*$/ )    # drop lines with empty headers
                   {
@@ -648,14 +649,18 @@ sub SelfTest()
 
    if ( GetPkgFormat() eq "DEB" )
    {
-      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ], 0 ), "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1.$ostag), ghi (= 7.0), jkl, aaa | bbb | perl(Carp) (>= 3.2)" );
-      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ], 1 ), "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1), ghi (= 7.0), jkl, aaa | bbb | perl(Carp) (>= 3.2)" );
+      assert(
+         _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "def-6.7(>6.6-1!)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ] ),
+         "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1.$ostag), def-6.7 (>> 6.6-1), ghi (= 7.0), jkl, aaa | bbb | perl(Carp) (>= 3.2)"
+      );
    }
 
    if ( GetPkgFormat() eq "RPM" )
    {
-      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ], 0 ), "abc-3.4 >= 4.4, def-6.7 > 6.6-1.$ostag, ghi = 7.0, jkl, aaa or bbb or perl(Carp) >= 3.2" );
-      assert( _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ], 1 ), "abc-3.4 >= 4.4, def-6.7 > 6.6-1, ghi = 7.0, jkl, aaa or bbb or perl(Carp) >= 3.2" );
+      assert(
+         _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "def-6.7(>6.6-1!)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ] ),
+         "abc-3.4 >= 4.4, def-6.7 > 6.6-1.$ostag, def-6.7 > 6.6-1, ghi = 7.0, jkl, aaa or bbb or perl(Carp) >= 3.2"
+      );
    }
 }
 
