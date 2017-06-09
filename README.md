@@ -12,5 +12,4 @@ Example:
       --pkg-installs='/opt/zimbra/zimlets/*'
 
 Test:
-   cd e2e-tests
-   sudo ./TEST.sh
+   cd e2e-tests && sudo ./TEST.sh
