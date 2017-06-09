@@ -1,0 +1,12 @@
+sudo: required
+
+language: perl
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y dpkg-dev debhelper
+
+install: true
+
+script:
+  - cd e2e-tests && sudo ./TEST.sh
