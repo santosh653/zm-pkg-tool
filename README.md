@@ -12,4 +12,5 @@ Example:
       --pkg-installs='/opt/zimbra/zimlets/*'
 
 Test:
+   [![Build Status](https://travis-ci.org/Zimbra/zm-pkg-tool.svg)](https://travis-ci.org/Zimbra/zm-pkg-tool)
    cd e2e-tests && sudo ./TEST.sh
