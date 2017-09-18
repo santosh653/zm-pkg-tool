@@ -199,7 +199,7 @@ protect=1
 EOM
       else
          cat >> /etc/apt/sources.list.d/local.list <<EOM
-deb file:///tmp/local-repo zmb-store/$R/
+deb [trusted=yes] file:///tmp/local-repo zmb-store/$R/
 EOM
       fi
    done
