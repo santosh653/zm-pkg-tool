@@ -411,6 +411,13 @@ sub Init()
          validate_sub => undef,
          default_sub  => sub { return GetPkgFormat(); },
       },
+      {
+         name         => "PKG_OS_TAG",
+         type         => "",
+         hash_src     => \%cmd_hash,
+         validate_sub => undef,
+         default_sub  => sub { return GetOsTag(); },
+      },
    );
 
    {
@@ -478,7 +485,7 @@ sub _SanitizePkgList($)
 
                if ( $cmp && $ver )
                {
-                  my $tag = ( !$no_add_os_tag && $ver =~ m/[-][^-]*$/ ) ? ".@{[GetOsTag()]}" : "";
+                  my $tag = ( !$no_add_os_tag && $ver =~ m/[-][^-]*$/ ) ? ".$CFG{PKG_OS_TAG}" : "";
 
                   if ( $CFG{PKG_FORMAT} eq "deb" )
                   {
@@ -515,14 +522,12 @@ sub _SanitizePkgList($)
 
 sub Build()
 {
-   my $ostag = GetOsTag();
-
-   System( "rm", "-f", $_ ) foreach glob("$CFG{OUT_DIST_DIR}/$ostag/$CFG{PKG_NAME}_*");
-   System( "rm", "-f", $_ ) foreach glob("$CFG{OUT_DIST_DIR}/$ostag/$CFG{PKG_NAME}-*.rpm");
+   System( "rm", "-f", $_ ) foreach glob("$CFG{OUT_DIST_DIR}/$CFG{PKG_OS_TAG}/$CFG{PKG_NAME}_*");
+   System( "rm", "-f", $_ ) foreach glob("$CFG{OUT_DIST_DIR}/$CFG{PKG_OS_TAG}/$CFG{PKG_NAME}-*.rpm");
 
    System( "rm",    "-rf", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
    System( "mkdir", "-p",  "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
-   System( "mkdir", "-p",  "$CFG{OUT_DIST_DIR}/$ostag/" );
+   System( "mkdir", "-p",  "$CFG{OUT_DIST_DIR}/$CFG{PKG_OS_TAG}/" );
 
    if ( $CFG{PKG_FORMAT} eq "rpm" )
    {
@@ -563,7 +568,7 @@ sub Build()
 
                   $line =~ s/[@][@]PKG_NAME[@][@]/$CFG{PKG_NAME}/g;
                   $line =~ s/[@][@]PKG_RELEASE[@][@]/$CFG{PKG_RELEASE}/g;
-                  $line =~ s/[@][@]PKG_OS_TAG[@][@]/$ostag/g;
+                  $line =~ s/[@][@]PKG_OS_TAG[@][@]/$CFG{PKG_OS_TAG}/g;
                   $line =~ s/[@][@]PKG_VERSION[@][@]/$CFG{PKG_VERSION}/g;
                   $line =~ s/[@][@]PKG_SUMMARY[@][@]/$CFG{PKG_SUMMARY}/g;
                   $line =~ s/[@][@]PKG_DEPENDS[@][@]/@{[_SanitizePkgList($CFG{PKG_DEPENDS})]}/g;
@@ -614,8 +619,8 @@ sub Build()
 
       print "\n\n";
       print "=========================================================================================================\n";
-      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/$ostag/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/SRPMS/*.rpm");
-      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/$ostag/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/RPMS/*/*.rpm");
+      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/$CFG{PKG_OS_TAG}/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/SRPMS/*.rpm");
+      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/$CFG{PKG_OS_TAG}/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/RPMS/*/*.rpm");
       print "=========================================================================================================\n";
    }
    elsif ( $CFG{PKG_FORMAT} eq "deb" )
@@ -634,7 +639,7 @@ sub Build()
 
       print "\n\n";
       print "=========================================================================================================\n";
-      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/$ostag/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}_*.*");
+      System( "mv", "-v", $_, "$CFG{OUT_DIST_DIR}/$CFG{PKG_OS_TAG}/" ) foreach glob("$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}_*.*");
       print "=========================================================================================================\n";
    }
    else
@@ -645,21 +650,19 @@ sub Build()
 
 sub SelfTest()
 {
-   my $ostag = GetOsTag();
-
-   if ( GetPkgFormat() eq "DEB" )
+   if ( $CFG{PKG_FORMAT} eq "DEB" )
    {
       assert(
          _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "def-6.7(>6.6-1!)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ] ),
-         "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1.$ostag), def-6.7 (>> 6.6-1), ghi (= 7.0), jkl, aaa | bbb | perl(Carp) (>= 3.2)"
+         "abc-3.4 (>= 4.4), def-6.7 (>> 6.6-1.$CFG{PKG_OS_TAG}), def-6.7 (>> 6.6-1), ghi (= 7.0), jkl, aaa | bbb | perl(Carp) (>= 3.2)"
       );
    }
 
-   if ( GetPkgFormat() eq "RPM" )
+   if ( $CFG{PKG_FORMAT} eq "RPM" )
    {
       assert(
          _SanitizePkgList( [ "abc-3.4(>=4.4)", "def-6.7(>6.6-1)", "def-6.7(>6.6-1!)", "ghi(=7.0)", "jkl", "aaa | bbb | perl(Carp) >= 3.2" ] ),
-         "abc-3.4 >= 4.4, def-6.7 > 6.6-1.$ostag, def-6.7 > 6.6-1, ghi = 7.0, jkl, aaa or bbb or perl(Carp) >= 3.2"
+         "abc-3.4 >= 4.4, def-6.7 > 6.6-1.$CFG{PKG_OS_TAG}, def-6.7 > 6.6-1, ghi = 7.0, jkl, aaa or bbb or perl(Carp) >= 3.2"
       );
    }
 }
