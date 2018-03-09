@@ -537,7 +537,7 @@ sub Build()
       close FILE;
    }
    if ( defined $CFG{PKG_PRE_INSTALL_SCRIPT}) {
-      open FILE, "$CFG{PKG_PRE_INSTALL_SCRIPT}" or die "Couldn't open postinst file: $!";
+      open FILE, "$CFG{PKG_PRE_INSTALL_SCRIPT}" or die "Couldn't open preinst file: $!";
       $pkg_pre_install_list = join("", <FILE>);
       close FILE;
    }
