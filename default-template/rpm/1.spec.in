@@ -29,19 +29,23 @@ Obsoletes: @@PKG_OBSOLETES@@
 %pre
 if [ "$1" = "1" ]; then
    :
+   @@PKG_PRE_INSTALL@@
    # Install
 elif [ "$1" = "2" ]; then
    :
+   @@PKG_PRE_INSTALL@@
    # Upgrade
 fi
 
 %post
 if [ "$1" = "1" ]; then
    :
+   @@PKG_POST_INSTALL@@
    # Install
 elif [ "$1" = "2" ]; then
    :
    # Upgrade
+   @@PKG_POST_INSTALL@@
 fi
 
 %preun
