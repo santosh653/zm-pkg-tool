@@ -529,6 +529,19 @@ sub Build()
    System( "mkdir", "-p",  "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
    System( "mkdir", "-p",  "$CFG{OUT_DIST_DIR}/$CFG{PKG_OS_TAG}/" );
 
+   my $pkg_pre_install_list = "";
+   my $pkg_post_install_list = "";
+   if ( defined $CFG{PKG_POST_INSTALL_SCRIPT}) {
+      open FILE, "$CFG{PKG_POST_INSTALL_SCRIPT}" or die "Couldn't open postinst file: $!";
+      $pkg_post_install_list = join("", <FILE>);
+      close FILE;
+   }
+   if ( defined $CFG{PKG_PRE_INSTALL_SCRIPT}) {
+      open FILE, "$CFG{PKG_PRE_INSTALL_SCRIPT}" or die "Couldn't open preinst file: $!";
+      $pkg_pre_install_list = join("", <FILE>);
+      close FILE;
+   }
+
    if ( $CFG{PKG_FORMAT} eq "rpm" )
    {
       System( "cp", "-a", "$GLOBAL_PATH_TO_SCRIPT_DIR/default-template/rpm", "$CFG{OUT_TEMP_DIR}/$CFG{PKG_NAME}/" );
@@ -565,7 +578,8 @@ sub Build()
 
                      $line =~ s/[@][@]PKG_INSTALLS[@][@]/$pkg_install_list/g;
                   }
-
+                  $line =~ s/[@][@]PKG_POST_INSTALL[@][@]/$pkg_post_install_list/g;
+                  $line =~ s/[@][@]PKG_PRE_INSTALL[@][@]/$pkg_pre_install_list/g;
                   $line =~ s/[@][@]PKG_NAME[@][@]/$CFG{PKG_NAME}/g;
                   $line =~ s/[@][@]PKG_RELEASE[@][@]/$CFG{PKG_RELEASE}/g;
                   $line =~ s/[@][@]PKG_OS_TAG[@][@]/$CFG{PKG_OS_TAG}/g;

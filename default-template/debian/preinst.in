@@ -1,0 +1,2 @@
+#!/bin/bash
+@@PKG_PRE_INSTALL@@
