@@ -377,7 +377,7 @@ sub Init()
          default_sub  => sub { return []; },
       },
       {
-         name         => "PKG_OBSOLETES",
+         name         => "PKG_CONFLICTS",
          type         => "=s@",
          hash_src     => \%cmd_hash,
          validate_sub => undef,
@@ -588,7 +588,7 @@ sub Build()
                   $line =~ s/[@][@]PKG_DEPENDS[@][@]/@{[_SanitizePkgList($CFG{PKG_DEPENDS})]}/g;
                   $line =~ s/[@][@]PKG_PRE_DEPENDS[@][@]/@{[_SanitizePkgList($CFG{PKG_PRE_DEPENDS})]}/g;
                   $line =~ s/[@][@]PKG_PROVIDES[@][@]/@{[_SanitizePkgList($CFG{PKG_PROVIDES})]}/g;
-                  $line =~ s/[@][@]PKG_OBSOLETES[@][@]/@{[_SanitizePkgList($CFG{PKG_OBSOLETES})]}/g;
+                  $line =~ s/[@][@]PKG_CONFLICTS[@][@]/@{[_SanitizePkgList($CFG{PKG_CONFLICTS})]}/g;
                   $line =~ s/[@][@]PKG_REPLACES[@][@]/@{[_SanitizePkgList($CFG{PKG_REPLACES})]}/g;
 
                   if ( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:](\s*,*\s*)*$/ )    # drop lines with empty headers

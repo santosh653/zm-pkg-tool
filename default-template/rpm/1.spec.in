@@ -11,7 +11,8 @@ AutoReqProv: no
 Requires: @@PKG_DEPENDS@@
 PreReq: @@PKG_PRE_DEPENDS@@
 Provides: @@PKG_PROVIDES@@
-Obsoletes: @@PKG_OBSOLETES@@
+Obsoletes: @@PKG_REPLACES@@
+Conflicts: @@PKG_CONFLICTS@@
 
 %description
 @@PKG_SUMMARY@@
