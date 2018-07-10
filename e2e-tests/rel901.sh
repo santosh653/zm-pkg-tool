@@ -46,10 +46,10 @@ EOM
    ../../zm-pkg-tool/pkg-build.pl --out-type=binary --pkg-installs='/opt/rr/' --pkg-name=zmb2-abc-svc --pkg-summary='its zmb-abc-svc' \
       --pkg-version=$PKG_SVC_VER --pkg-release=$PKG_SVC_REV \
       "${SVC_DEP[@]}" \
-      --pkg-obsoletes='zmb1-abc-svc' \
-      --pkg-obsoletes='zmb1-abc-bin' \
-      --pkg-obsoletes='zmb1-abc-lib' \
-      --pkg-obsoletes='zmb1-cmn-lib'
+      --pkg-conflicts='zmb1-abc-svc' \
+      --pkg-conflicts='zmb1-abc-bin' \
+      --pkg-conflicts='zmb1-abc-lib' \
+      --pkg-conflicts='zmb1-cmn-lib'
 
    mv build/dist/*/* /tmp/local-repo/zmb-store/D2/
 

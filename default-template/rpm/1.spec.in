@@ -12,6 +12,7 @@ Requires: @@PKG_DEPENDS@@
 PreReq: @@PKG_PRE_DEPENDS@@
 Provides: @@PKG_PROVIDES@@
 Obsoletes: @@PKG_OBSOLETES@@
+Conflicts: @@PKG_CONFLICTS@@
 
 %description
 @@PKG_SUMMARY@@

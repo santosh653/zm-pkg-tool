@@ -13,6 +13,6 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, @@PKG_DEPENDS@@
 Pre-Depends: @@PKG_PRE_DEPENDS@@
 Provides: @@PKG_PROVIDES@@
-Conflicts: @@PKG_OBSOLETES@@
-Replaces: @@PKG_REPLACES@@
+Conflicts: @@PKG_CONFLICTS@@, @@PKG_OBSOLETES@@
+Replaces: @@PKG_REPLACES@@, @@PKG_OBSOLETES@@
 Description: @@PKG_SUMMARY@@
