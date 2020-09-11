@@ -601,6 +601,10 @@ sub Build()
 
                   if ( $line =~ m/^\s*[A-Za-z][A-Za-z_0-9-]*\s*[:](\s*,*\s*)*$/ )    # drop lines with empty headers
                   {
+			  if ( $line =~ "override_dh_strip_nondeterminism:" )
+                         {
+                           print FDw $line;
+                         }
                   }
                   else
                   {

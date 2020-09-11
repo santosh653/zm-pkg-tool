@@ -6,6 +6,8 @@ export DEB_BUILD_OPTIONS=nocheck
 export DEB_LDFLAGS_MAINT_APPEND=-Wl,-rpath,OZCL
 export DEB_CFLAGS_MAINT_STRIP=-O2
 export DEB_CFLAGS_MAINT_APPEND=-O0
+override_dh_strip_nondeterminism:
+	# Disables dh_strip_nondeterminism to speed up the debian package creation
 
 %:
 	dh $@ 
