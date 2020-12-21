@@ -412,6 +412,20 @@ sub Init()
          default_sub  => sub { return undef; },
       },
       {
+         name         => "PKG_PRE_UNINSTALL_SCRIPT",
+         type         => "=s",
+         hash_src     => \%cmd_hash,
+         validate_sub => undef,
+         default_sub  => sub { return undef; },
+      },
+      {
+         name         => "PKG_POST_UNINSTALL_SCRIPT",
+         type         => "=s",
+         hash_src     => \%cmd_hash,
+         validate_sub => undef,
+         default_sub  => sub { return undef; },
+      },
+      {
          name         => "PKG_FORMAT",
          type         => "",
          hash_src     => \%cmd_hash,
@@ -538,6 +552,8 @@ sub Build()
 
    my $pkg_pre_install_list = "";
    my $pkg_post_install_list = "";
+   my $pkg_pre_uninstall_list = "";
+   my $pkg_post_uninstall_list = "";
    if ( defined $CFG{PKG_POST_INSTALL_SCRIPT}) {
       open FILE, "$CFG{PKG_POST_INSTALL_SCRIPT}" or die "Couldn't open postinst file: $!";
       $pkg_post_install_list = join("", <FILE>);
@@ -546,6 +562,16 @@ sub Build()
    if ( defined $CFG{PKG_PRE_INSTALL_SCRIPT}) {
       open FILE, "$CFG{PKG_PRE_INSTALL_SCRIPT}" or die "Couldn't open preinst file: $!";
       $pkg_pre_install_list = join("", <FILE>);
+      close FILE;
+   }
+   if ( defined $CFG{PKG_PRE_UNINSTALL_SCRIPT}) {
+      open FILE, "$CFG{PKG_PRE_UNINSTALL_SCRIPT}" or die "Couldn't open preuninst file: $!";
+      $pkg_pre_uninstall_list = join("", <FILE>);
+      close FILE;
+   }
+   if ( defined $CFG{PKG_POST_UNINSTALL_SCRIPT}) {
+      open FILE, "$CFG{PKG_POST_UNINSTALL_SCRIPT}" or die "Couldn't open postuninst file: $!";
+      $pkg_post_uninstall_list = join("", <FILE>);
       close FILE;
    }
 
@@ -587,6 +613,8 @@ sub Build()
                   }
                   $line =~ s/[@][@]PKG_POST_INSTALL[@][@]/$pkg_post_install_list/g;
                   $line =~ s/[@][@]PKG_PRE_INSTALL[@][@]/$pkg_pre_install_list/g;
+                  $line =~ s/[@][@]PKG_PRE_UNINSTALL[@][@]/$pkg_pre_uninstall_list/g;
+                  $line =~ s/[@][@]PKG_POST_UNINSTALL[@][@]/$pkg_post_uninstall_list/g;
                   $line =~ s/[@][@]PKG_NAME[@][@]/$CFG{PKG_NAME}/g;
                   $line =~ s/[@][@]PKG_RELEASE[@][@]/$CFG{PKG_RELEASE}/g;
                   $line =~ s/[@][@]PKG_OS_TAG[@][@]/$CFG{PKG_OS_TAG}/g;
